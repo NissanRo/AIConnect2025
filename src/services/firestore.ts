@@ -2,7 +2,7 @@
 'use server';
 
 import { db } from '@/lib/firebase';
-import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, query, orderBy, runTransaction, writeBatch } from 'firebase/firestore';
+import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, query, orderBy, runTransaction, writeBatch, getDoc } from 'firebase/firestore';
 import type { Project, Application } from '@/lib/types';
 import { initialProjects } from '@/data/initial-projects';
 
@@ -55,15 +55,13 @@ export async function addProject(project: Omit<Project, 'id' | 'code' | 'order'>
     const projectsQuery = query(projectsRef, orderBy('code', 'desc'));
     const orderQuery = query(projectsRef, orderBy('order', 'desc'));
     
-    const [codeSnapshot, orderSnapshot] = await Promise.all([
-        getDocs(projectsQuery),
-        getDocs(orderQuery)
-    ]);
+    const codeSnapshot = await getDocs(projectsQuery);
+    const orderSnapshot = await getDocs(orderQuery);
     
     let newCode = 'PROJ-001';
     if (!codeSnapshot.empty) {
-      const lastProject = codeSnapshot.docs[0].data() as Project;
-      const lastCodeNumber = parseInt(lastProject.code.split('-')[1]);
+      const lastProjectCode = codeSnapshot.docs[0].data().code;
+      const lastCodeNumber = parseInt(lastProjectCode.split('-')[1]);
       const newCodeNumber = lastCodeNumber + 1;
       newCode = `PROJ-${newCodeNumber.toString().padStart(3, '0')}`;
     }
@@ -82,7 +80,7 @@ export async function addProject(project: Omit<Project, 'id' | 'code' | 'order'>
 }
 
 
-export async function updateProject(id: string, project: Partial<Omit<Project, 'id'>>) {
+export async function updateProject(id: string, project: Partial<Omit<Project, 'id' | 'code' | 'order'>>) {
   const projectRef = doc(db, PROJECTS_COLLECTION, id);
   await updateDoc(projectRef, project);
 }

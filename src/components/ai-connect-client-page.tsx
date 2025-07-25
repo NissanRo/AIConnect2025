@@ -29,7 +29,7 @@ const AIConnectClientPage: FC<AIConnectClientPageProps> = ({ initialProjects }) 
   const [isAdmin, setIsAdmin] = useState(false);
   const [projects, setProjects] = useState<Project[]>(initialProjects);
   const [applications, setApplications] = useState<Application[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
   const [isReordering, setIsReordering] = useState(false);
@@ -50,15 +50,16 @@ const AIConnectClientPage: FC<AIConnectClientPageProps> = ({ initialProjects }) 
   useEffect(() => {
     // Only fetch applications on mount, projects are passed in
     const fetchApplications = async () => {
-      setIsLoading(true);
       try {
-        const applicationsData = await getApplications();
+        const [projectsData, applicationsData] = await Promise.all([getProjects(), getApplications()]);
+        setProjects(projectsData);
         setApplications(applicationsData);
       } catch (error) {
-        console.error("Failed to fetch applications", error);
-        toast({ title: "Error", description: "Failed to load application data. Please try again later.", variant: "destructive" });
+        console.error("Failed to fetch initial data", error);
+        toast({ title: "Error", description: "Failed to load page data. Please try again later.", variant: "destructive" });
+      } finally {
+        setIsLoading(false);
       }
-      setIsLoading(false);
     };
 
     fetchApplications();
@@ -107,20 +108,27 @@ const AIConnectClientPage: FC<AIConnectClientPageProps> = ({ initialProjects }) 
             // update project doesn't handle order or code
             const originalProject = projects.find(p => p.id === id);
             if (!originalProject) throw new Error("Project not found");
-            const updatedProjectData = {
-                ...projectData,
-                code: originalProject.code,
-                order: originalProject.order,
+            
+            const projectToUpdate = {
+                title: projectData.title,
+                objective: projectData.objective,
+                deliverables: projectData.deliverables,
+                tools: projectData.tools,
+                longTermScope: projectData.longTermScope,
+                imageUrl: projectData.imageUrl,
+                imageHint: projectData.imageHint,
             };
-            await updateProject(id, updatedProjectData);
-            setProjects(await getProjects());
+
+            await updateProject(id, projectToUpdate);
+            setProjects(await getProjects()); // Re-fetch to get the updated list
             toast({ title: "Project Updated", description: `"${projectData.title}" has been successfully updated.` });
         } else {
             const newProject = await addProject(projectData);
-            setProjects(prevProjects => [...prevProjects, newProject].sort((a,b) => a.order - b.order));
+            setProjects(await getProjects()); // Re-fetch to get the updated list with the new project
             toast({ title: "Project Added", description: `"${newProject.title}" has been successfully added.` });
         }
     } catch (error) {
+        console.error("Failed to save project:", error);
         toast({ title: "Error", description: "Failed to save project. Please try again.", variant: "destructive" });
     } finally {
         setProjectModalOpen(false);
@@ -247,7 +255,7 @@ const AIConnectClientPage: FC<AIConnectClientPageProps> = ({ initialProjects }) 
         {isAdmin && <ApplicationsTable applications={applications} />}
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 my-12">
-            {isLoading && !projects.length ? renderProjectSkeletons() : projects.map((project, index) => (
+            {isLoading ? renderProjectSkeletons() : projects.map((project, index) => (
                 <ProjectCard
                     key={project.id}
                     project={project}
@@ -283,5 +291,3 @@ const AIConnectClientPage: FC<AIConnectClientPageProps> = ({ initialProjects }) 
 };
 
 export default AIConnectClientPage;
-
-    

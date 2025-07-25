@@ -32,7 +32,7 @@ export async function addProject(project: Omit<Project, 'id'| 'code' | 'order'>)
     return newProject
 }
 
-export async function updateProject(id: string, project: Omit<Project, 'id'>) {
+export async function updateProject(id: string, project: Partial<Omit<Project, 'id' | 'code' | 'order'>>) {
     await updateProjectInDb(id, project);
 }
 
