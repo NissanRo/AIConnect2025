@@ -43,9 +43,12 @@ const InterestForm: FC<InterestFormProps> = ({ projects, onSubmit, onGetAISugges
       location: '',
       specialization: '',
       skills: '',
+      gradYear: new Date().getFullYear() + 1,
       college: '',
       contact: '',
       email: '',
+      workType: 'Individual',
+      projectId: '',
     },
   });
   
