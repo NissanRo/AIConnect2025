@@ -101,7 +101,35 @@ const InterestForm: FC<InterestFormProps> = ({ projects, onSubmit, onGetAISugges
                   <FormField control={form.control} name="workType" render={({ field }) => ( <FormItem><FormLabel>How will you be working?</FormLabel><FormControl><RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="flex items-center space-x-6 pt-2"><FormItem className="flex items-center space-x-2"><RadioGroupItem value="Team" id="workType-team" /><FormLabel htmlFor="workType-team" className="font-normal">Team</FormLabel></FormItem><FormItem className="flex items-center space-x-2"><RadioGroupItem value="Individual" id="workType-individual" /><FormLabel htmlFor="workType-individual" className="font-normal">Individual</FormLabel></FormItem></RadioGroup></FormControl><FormMessage /></FormItem> )} />
                 </div>
                 <div className="md:col-span-2">
-                   <FormField control={form.control} name="projectId" render={({ field }) => ( <FormItem> <FormLabel>Project of Interest</FormLabel> <div className="flex gap-2 items-start"> <div className="flex-grow"> <FormControl> <Select onValueChange={field.onChange} defaultValue={field.value}> <SelectTrigger> <SelectValue placeholder="Select a Project" /> </SelectTrigger> <SelectContent> {projects.map(project => ( <SelectItem key={project.id} value={project.id.toString()}> Project {project.id}: {project.title} </SelectItem> ))} </SelectContent> </Select> </FormControl> </div> <Button type="button" variant="outline" onClick={handleAISuggestClick} aria-label="Get AI Suggestions"> <Sparkles className="h-4 w-4" /> </Button> </div> <FormMessage /> </FormItem> )} />
+                  <FormField
+                    control={form.control}
+                    name="projectId"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Project of Interest</FormLabel>
+                        <div className="flex gap-2 items-start">
+                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select a Project" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {projects.map(project => (
+                                <SelectItem key={project.id} value={project.id.toString()}>
+                                  Project {project.id}: {project.title}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <Button type="button" variant="outline" onClick={handleAISuggestClick} aria-label="Get AI Suggestions">
+                            <Sparkles className="h-4 w-4" />
+                          </Button>
+                        </div>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
                 </div>
               </div>
               <div className="text-center mt-6">
