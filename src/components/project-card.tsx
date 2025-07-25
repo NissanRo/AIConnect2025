@@ -1,3 +1,4 @@
+
 import type { FC } from 'react';
 import Image from 'next/image';
 import { Pencil, Trash2 } from 'lucide-react';
