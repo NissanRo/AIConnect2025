@@ -1,9 +1,10 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
 import type { FC } from 'react';
 import { Button } from '@/components/ui/button';
-import { Plus } from 'lucide-react';
+import { Plus, LogOut } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast"
 import type { Project, Application } from '@/lib/types';
 import Header from '@/components/header';
@@ -67,6 +68,12 @@ const AIConnectClientPage: FC<AIConnectClientPageProps> = ({ initialProjects }) 
     }
     return false;
   };
+  
+  const handleLogout = () => {
+    setIsAdmin(false);
+    toast({ title: "Logged Out", description: "You have returned to the main page." });
+  };
+
 
   // Project CRUD handlers
   const handleSaveProject = (projectData: Omit<Project, 'id'>, id?: number) => {
@@ -133,9 +140,12 @@ const AIConnectClientPage: FC<AIConnectClientPageProps> = ({ initialProjects }) 
         </section>
 
         {isAdmin && (
-          <div className="text-center mb-12">
+          <div className="text-center mb-12 flex justify-center gap-4">
             <Button size="lg" onClick={openAddProjectModal}>
               <Plus className="mr-2 h-5 w-5" /> Add New Project
+            </Button>
+            <Button size="lg" variant="outline" onClick={handleLogout}>
+              <LogOut className="mr-2 h-5 w-5" /> Return to Main Page
             </Button>
           </div>
         )}
