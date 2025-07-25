@@ -2,7 +2,7 @@
 'use server';
 
 import { db } from '@/lib/firebase';
-import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, query, orderBy } from 'firebase/firestore';
+import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, query, orderBy, runTransaction } from 'firebase/firestore';
 import type { Project, Application } from '@/lib/types';
 import { initialProjects } from '@/data/initial-projects';
 
@@ -15,8 +15,7 @@ export async function seedInitialProjects() {
     if (projectsSnapshot.empty) {
         console.log('No projects found, seeding initial projects...');
         const promises = initialProjects.map(project => {
-            const { id, ...rest } = project; // exclude the numeric id
-            return addDoc(collection(db, PROJECTS_COLLECTION), rest);
+            return addDoc(collection(db, PROJECTS_COLLECTION), project);
         });
         await Promise.all(promises);
         console.log('Initial projects seeded.');
@@ -27,15 +26,32 @@ export async function seedInitialProjects() {
 // Project Functions
 export async function getProjects(): Promise<Project[]> {
   await seedInitialProjects();
-  const projectsCollection = query(collection(db, PROJECTS_COLLECTION), orderBy("title"));
+  const projectsCollection = query(collection(db, PROJECTS_COLLECTION), orderBy("code"));
   const projectsSnapshot = await getDocs(projectsCollection);
   return projectsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Project));
 }
 
-export async function addProject(project: Omit<Project, 'id'>): Promise<string> {
-  const docRef = await addDoc(collection(db, PROJECTS_COLLECTION), project);
-  return docRef.id;
+export async function addProject(project: Omit<Project, 'id' | 'code'>): Promise<string> {
+  const projectsRef = collection(db, PROJECTS_COLLECTION);
+  
+  return runTransaction(db, async (transaction) => {
+    const projectsQuery = query(projectsRef, orderBy('code', 'desc'));
+    const snapshot = await getDocs(projectsQuery);
+    let newCode = 'PROJ-001';
+    if (!snapshot.empty) {
+      const lastProject = snapshot.docs[0].data() as Project;
+      const lastCodeNumber = parseInt(lastProject.code.split('-')[1]);
+      const newCodeNumber = lastCodeNumber + 1;
+      newCode = `PROJ-${newCodeNumber.toString().padStart(3, '0')}`;
+    }
+    
+    const newProjectData = { ...project, code: newCode };
+    const docRef = doc(projectsRef); // create a new doc reference with an auto-generated ID
+    transaction.set(docRef, newProjectData);
+    return docRef.id;
+  });
 }
+
 
 export async function updateProject(id: string, project: Partial<Omit<Project, 'id'>>) {
   const projectRef = doc(db, PROJECTS_COLLECTION, id);

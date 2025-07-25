@@ -1,5 +1,6 @@
 export interface Project {
   id: string;
+  code: string;
   title: string;
   objective: string;
   deliverables: string[];

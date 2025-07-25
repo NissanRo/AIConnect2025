@@ -22,9 +22,16 @@ export async function getProjects(): Promise<Project[]> {
     return await getProjectsFromDb();
 }
 
-export async function addProject(project: Omit<Project, 'id'>): Promise<Project> {
+export async function addProject(project: Omit<Project, 'id'| 'code'>): Promise<Project> {
     const id = await addProjectToDb(project);
-    return { id, ...project };
+    // This is not perfect, as we don't get the generated code back, but it's a simple way to reflect the change on the client
+    // A better implementation would be to get the full project object back from addProjectToDb
+    const projects = await getProjectsFromDb();
+    const newProject = projects.find(p => p.id === id);
+    if (!newProject) {
+        throw new Error('Could not find newly created project');
+    }
+    return newProject
 }
 
 export async function updateProject(id: string, project: Omit<Project, 'id'>) {

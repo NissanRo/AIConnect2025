@@ -1,7 +1,7 @@
 'use client';
 
-import type { FC } from 'react';
 import React from 'react';
+import type { FC } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -27,7 +27,7 @@ type ProjectFormValues = z.infer<typeof projectSchema>;
 interface ProjectModalProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
-  onSave: (projectData: Omit<Project, 'id'>, id?: string) => void;
+  onSave: (projectData: Omit<Project, 'id' | 'code'>, id?: string) => void;
   projectToEdit: Project | null;
 }
 

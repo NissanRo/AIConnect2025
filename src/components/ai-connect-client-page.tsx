@@ -21,9 +21,13 @@ import { AiSuggestionModal } from '@/components/modals/ai-suggestion-modal';
 import { getProjects, addProject, updateProject, deleteProject, getApplications, addApplication } from '@/app/actions';
 import { Skeleton } from '@/components/ui/skeleton';
 
-const AIConnectClientPage: FC = () => {
+interface AIConnectClientPageProps {
+  initialProjects: Project[];
+}
+
+const AIConnectClientPage: FC<AIConnectClientPageProps> = ({ initialProjects }) => {
   const [isAdmin, setIsAdmin] = useState(false);
-  const [projects, setProjects] = useState<Project[]>([]);
+  const [projects, setProjects] = useState<Project[]>(initialProjects);
   const [applications, setApplications] = useState<Application[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
@@ -44,15 +48,12 @@ const AIConnectClientPage: FC = () => {
     const fetchData = async () => {
       setIsLoading(true);
       try {
-        const [projectsData, applicationsData] = await Promise.all([
-          getProjects(),
-          getApplications()
-        ]);
-        setProjects(projectsData);
+        // Projects are passed as props now, so we only need to fetch applications
+        const applicationsData = await getApplications();
         setApplications(applicationsData);
       } catch (error) {
-        console.error("Failed to fetch initial data", error);
-        toast({ title: "Error", description: "Failed to load data. Please try again later.", variant: "destructive" });
+        console.error("Failed to fetch applications", error);
+        toast({ title: "Error", description: "Failed to load application data. Please try again later.", variant: "destructive" });
       }
       setIsLoading(false);
     };
@@ -96,16 +97,17 @@ const AIConnectClientPage: FC = () => {
 
 
   // Project CRUD handlers
-  const handleSaveProject = async (projectData: Omit<Project, 'id'>, id?: string) => {
+  const handleSaveProject = async (projectData: Omit<Project, 'id' | 'code'>, id?: string) => {
     try {
         if (id) {
             await updateProject(id, projectData);
-            setProjects(projects.map(p => p.id === id ? { ...projectData, id } : p));
+            const updatedProjects = await getProjects();
+            setProjects(updatedProjects);
             toast({ title: "Project Updated", description: `"${projectData.title}" has been successfully updated.` });
         } else {
             const newProject = await addProject(projectData);
-            setProjects([...projects, newProject]);
-            toast({ title: "Project Added", description: `"${projectData.title}" has been successfully added.` });
+            setProjects(prevProjects => [...prevProjects, newProject].sort((a, b) => a.code.localeCompare(b.code)));
+            toast({ title: "Project Added", description: `"${newProject.title}" has been successfully added.` });
         }
     } catch (error) {
         toast({ title: "Error", description: "Failed to save project. Please try again.", variant: "destructive" });

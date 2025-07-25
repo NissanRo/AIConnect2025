@@ -64,7 +64,7 @@ const InterestForm: FC<InterestFormProps> = ({ projects, onSubmit, onGetAISugges
       ...values,
       gradYear: values.gradYear.toString(),
       projectId: selectedProject.id,
-      projectInterest: `Project ${selectedProject.id}: ${selectedProject.title}`,
+      projectInterest: `${selectedProject.code}: ${selectedProject.title}`,
     };
     onSubmit(application);
     form.reset();
@@ -111,7 +111,7 @@ const InterestForm: FC<InterestFormProps> = ({ projects, onSubmit, onGetAISugges
                       <FormItem>
                         <FormLabel>Project of Interest</FormLabel>
                         <div className="flex gap-2 items-start">
-                           <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <Select onValueChange={field.onChange} defaultValue={field.value}>
                             <FormControl>
                               <SelectTrigger>
                                 <SelectValue placeholder="Select a Project" />
@@ -120,7 +120,7 @@ const InterestForm: FC<InterestFormProps> = ({ projects, onSubmit, onGetAISugges
                             <SelectContent>
                               {projects.map(project => (
                                 <SelectItem key={project.id} value={project.id.toString()}>
-                                  Project {project.id}: {project.title}
+                                  {project.code}: {project.title}
                                 </SelectItem>
                               ))}
                             </SelectContent>

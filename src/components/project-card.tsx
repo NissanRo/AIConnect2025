@@ -28,7 +28,7 @@ const ProjectCard: FC<ProjectCardProps> = ({ project, isAdmin, onEdit, onDelete 
         />
       </div>
       <CardHeader>
-        <CardTitle className="text-xl">Project: {project.title}</CardTitle>
+        <CardTitle className="text-xl">{project.code}: {project.title}</CardTitle>
       </CardHeader>
       <CardContent className="flex-grow space-y-4">
         <p className="text-muted-foreground"><strong className="text-foreground">Objective:</strong> {project.objective}</p>
