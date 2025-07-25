@@ -4,7 +4,7 @@
 import { useState, useEffect, useTransition } from 'react';
 import type { FC } from 'react';
 import { Button } from '@/components/ui/button';
-import { Plus, LogOut, ArrowUpDown, Check } from 'lucide-react';
+import { Plus, LogOut, ArrowUpDown } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast"
 import type { Project, Application } from '@/lib/types';
 import Header from '@/components/header';
@@ -48,21 +48,21 @@ const AIConnectClientPage: FC<AIConnectClientPageProps> = ({ initialProjects }) 
   const [aiSuggestionProfile, setAiSuggestionProfile] = useState<{ specialization: string, skills: string }>({ specialization: '', skills: '' });
 
   useEffect(() => {
-    // Only fetch applications on mount, projects are passed in
-    const fetchApplications = async () => {
+    // Projects are now passed in as initialProjects, so we only need to fetch applications on the client.
+    const fetchPageData = async () => {
+      setIsLoading(true);
       try {
-        const [projectsData, applicationsData] = await Promise.all([getProjects(), getApplications()]);
-        setProjects(projectsData);
+        const applicationsData = await getApplications();
         setApplications(applicationsData);
       } catch (error) {
-        console.error("Failed to fetch initial data", error);
+        console.error("Failed to fetch page data", error);
         toast({ title: "Error", description: "Failed to load page data. Please try again later.", variant: "destructive" });
       } finally {
         setIsLoading(false);
       }
     };
 
-    fetchApplications();
+    fetchPageData();
   }, [toast]);
 
 
@@ -254,8 +254,8 @@ const AIConnectClientPage: FC<AIConnectClientPageProps> = ({ initialProjects }) 
 
         {isAdmin && <ApplicationsTable applications={applications} />}
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 my-12">
-            {isLoading ? renderProjectSkeletons() : projects.map((project, index) => (
+        <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8 my-12">
+            {isLoading && projects.length === 0 ? renderProjectSkeletons() : projects.map((project, index) => (
                 <ProjectCard
                     key={project.id}
                     project={project}
