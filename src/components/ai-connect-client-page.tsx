@@ -18,15 +18,14 @@ import { ProjectModal } from '@/components/modals/project-modal';
 import { DeleteConfirmModal } from '@/components/modals/delete-confirm-modal';
 import { SubmissionConfirmModal } from '@/components/modals/submission-confirm-modal';
 import { AiSuggestionModal } from '@/components/modals/ai-suggestion-modal';
+import { getProjects, addProject, updateProject, deleteProject, getApplications, addApplication } from '@/app/actions';
+import { Skeleton } from '@/components/ui/skeleton';
 
-interface AIConnectClientPageProps {
-  initialProjects: Project[];
-}
-
-const AIConnectClientPage: FC<AIConnectClientPageProps> = ({ initialProjects }) => {
+const AIConnectClientPage: FC = () => {
   const [isAdmin, setIsAdmin] = useState(false);
-  const [projects, setProjects] = useState<Project[]>(initialProjects);
+  const [projects, setProjects] = useState<Project[]>([]);
   const [applications, setApplications] = useState<Application[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
   // State for modals
@@ -40,6 +39,27 @@ const AIConnectClientPage: FC<AIConnectClientPageProps> = ({ initialProjects }) 
   const [projectToEdit, setProjectToEdit] = useState<Project | null>(null);
   const [projectToDelete, setProjectToDelete] = useState<Project | null>(null);
   const [aiSuggestionProfile, setAiSuggestionProfile] = useState<{ specialization: string, skills: string }>({ specialization: '', skills: '' });
+
+  useEffect(() => {
+    const fetchData = async () => {
+      setIsLoading(true);
+      try {
+        const [projectsData, applicationsData] = await Promise.all([
+          getProjects(),
+          getApplications()
+        ]);
+        setProjects(projectsData);
+        setApplications(applicationsData);
+      } catch (error) {
+        console.error("Failed to fetch initial data", error);
+        toast({ title: "Error", description: "Failed to load data. Please try again later.", variant: "destructive" });
+      }
+      setIsLoading(false);
+    };
+
+    fetchData();
+  }, [toast]);
+
 
   // Admin login logic
   const [logoClickCount, setLogoClickCount] = useState(0);
@@ -76,17 +96,23 @@ const AIConnectClientPage: FC<AIConnectClientPageProps> = ({ initialProjects }) 
 
 
   // Project CRUD handlers
-  const handleSaveProject = (projectData: Omit<Project, 'id'>, id?: number) => {
-    if (id !== undefined) {
-      setProjects(projects.map(p => p.id === id ? { ...projectData, id } : p));
-      toast({ title: "Project Updated", description: `"${projectData.title}" has been successfully updated.` });
-    } else {
-      const newId = projects.length > 0 ? Math.max(...projects.map(p => p.id)) + 1 : 1;
-      setProjects([...projects, { ...projectData, id: newId }]);
-      toast({ title: "Project Added", description: `"${projectData.title}" has been successfully added.` });
+  const handleSaveProject = async (projectData: Omit<Project, 'id'>, id?: string) => {
+    try {
+        if (id) {
+            await updateProject(id, projectData);
+            setProjects(projects.map(p => p.id === id ? { ...projectData, id } : p));
+            toast({ title: "Project Updated", description: `"${projectData.title}" has been successfully updated.` });
+        } else {
+            const newProject = await addProject(projectData);
+            setProjects([...projects, newProject]);
+            toast({ title: "Project Added", description: `"${projectData.title}" has been successfully added.` });
+        }
+    } catch (error) {
+        toast({ title: "Error", description: "Failed to save project. Please try again.", variant: "destructive" });
+    } finally {
+        setProjectModalOpen(false);
+        setProjectToEdit(null);
     }
-    setProjectModalOpen(false);
-    setProjectToEdit(null);
   };
 
   const openAddProjectModal = () => {
@@ -104,19 +130,30 @@ const AIConnectClientPage: FC<AIConnectClientPageProps> = ({ initialProjects }) 
     setDeleteModalOpen(true);
   };
 
-  const confirmDeleteProject = () => {
+  const confirmDeleteProject = async () => {
     if (projectToDelete) {
-      setProjects(projects.filter(p => p.id !== projectToDelete.id));
-      toast({ title: "Project Deleted", description: `Project "${projectToDelete.title}" has been removed.`, variant: "destructive" });
+        try {
+            await deleteProject(projectToDelete.id);
+            setProjects(projects.filter(p => p.id !== projectToDelete.id));
+            toast({ title: "Project Deleted", description: `Project "${projectToDelete.title}" has been removed.`, variant: "destructive" });
+        } catch (error) {
+            toast({ title: "Error", description: "Failed to delete project.", variant: "destructive" });
+        } finally {
+            setDeleteModalOpen(false);
+            setProjectToDelete(null);
+        }
     }
-    setDeleteModalOpen(false);
-    setProjectToDelete(null);
   };
 
   // Application handler
-  const handleAddApplication = (application: Application) => {
-    setApplications([...applications, application]);
-    setSubmissionModalOpen(true);
+  const handleAddApplication = async (application: Omit<Application, 'id'>) => {
+    try {
+        const newApplication = await addApplication(application);
+        setApplications([...applications, newApplication]);
+        setSubmissionModalOpen(true);
+    } catch (error) {
+        toast({ title: "Error", description: "Failed to submit your interest. Please try again.", variant: "destructive" });
+    }
   };
 
   // AI Suggestion handler
@@ -125,6 +162,17 @@ const AIConnectClientPage: FC<AIConnectClientPageProps> = ({ initialProjects }) 
     setAiSuggestModalOpen(true);
   };
 
+  const renderProjectSkeletons = () => (
+    [...Array(4)].map((_, i) => (
+        <div key={i} className="flex flex-col space-y-3">
+            <Skeleton className="h-[200px] w-full rounded-xl" />
+            <div className="space-y-2">
+                <Skeleton className="h-4 w-[250px]" />
+                <Skeleton className="h-4 w-[200px]" />
+            </div>
+        </div>
+    ))
+  );
 
   return (
     <>
@@ -153,15 +201,15 @@ const AIConnectClientPage: FC<AIConnectClientPageProps> = ({ initialProjects }) 
         {isAdmin && <ApplicationsTable applications={applications} />}
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 my-12">
-          {projects.map(project => (
-            <ProjectCard
-              key={project.id}
-              project={project}
-              isAdmin={isAdmin}
-              onEdit={openEditProjectModal}
-              onDelete={openDeleteProjectModal}
-            />
-          ))}
+            {isLoading ? renderProjectSkeletons() : projects.map(project => (
+                <ProjectCard
+                    key={project.id}
+                    project={project}
+                    isAdmin={isAdmin}
+                    onEdit={openEditProjectModal}
+                    onDelete={openDeleteProjectModal}
+                />
+            ))}
         </div>
 
         <InterestForm 

@@ -31,7 +31,7 @@ type FormValues = z.infer<typeof formSchema>;
 
 interface InterestFormProps {
   projects: Project[];
-  onSubmit: (application: Application) => void;
+  onSubmit: (application: Omit<Application, 'id'>) => void;
   onGetAISuggestions: (specialization: string, skills: string) => void;
 }
 
@@ -57,10 +57,10 @@ const InterestForm: FC<InterestFormProps> = ({ projects, onSubmit, onGetAISugges
   const skills = watch('skills');
 
   function handleFormSubmit(values: FormValues) {
-    const selectedProject = projects.find(p => p.id === parseInt(values.projectId));
+    const selectedProject = projects.find(p => p.id === values.projectId);
     if (!selectedProject) return;
 
-    const application: Application = {
+    const application: Omit<Application, 'id'> = {
       ...values,
       gradYear: values.gradYear.toString(),
       projectId: selectedProject.id,
@@ -101,7 +101,7 @@ const InterestForm: FC<InterestFormProps> = ({ projects, onSubmit, onGetAISugges
                 <FormField control={form.control} name="contact" render={({ field }) => ( <FormItem><FormLabel>Contact Number</FormLabel><FormControl><Input type="tel" placeholder="Your phone number" {...field} /></FormControl><FormMessage /></FormItem> )} />
                 <FormField control={form.control} name="email" render={({ field }) => ( <FormItem><FormLabel>Email ID</FormLabel><FormControl><Input type="email" placeholder="Your email address" {...field} /></FormControl><FormMessage /></FormItem> )} />
                 <div className="md:col-span-2">
-                  <FormField control={form.control} name="workType" render={({ field }) => ( <FormItem><FormLabel>How will you be working?</FormLabel><FormControl><RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="flex items-center space-x-6 pt-2"><FormItem className="flex items-center space-x-2"><RadioGroupItem value="Team" id="workType-team" /><FormLabel htmlFor="workType-team" className="font-normal">Team</FormLabel></FormItem><FormItem className="flex items-center space-x-2"><RadioGroupItem value="Individual" id="workType-individual" /><FormLabel htmlFor="workType-individual" className="font-normal">Individual</FormLabel></FormItem></RadioGroup></FormControl><FormMessage /></FormItem> )} />
+                  <FormField control={form.control} name="workType" render={({ field }) => ( <FormItem><FormLabel>How will you be working?</FormLabel><FormControl><RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="flex items-center space-x-6 pt-2"><FormItem className="flex items-center space-x-2"><FormControl><RadioGroupItem value="Team" id="workType-team" /></FormControl><FormLabel htmlFor="workType-team" className="font-normal">Team</FormLabel></FormItem><FormItem className="flex items-center space-x-2"><FormControl><RadioGroupItem value="Individual" id="workType-individual" /></FormControl><FormLabel htmlFor="workType-individual" className="font-normal">Individual</FormLabel></FormItem></RadioGroup></FormControl><FormMessage /></FormItem> )} />
                 </div>
                 <div className="md:col-span-2">
                   <FormField
@@ -111,7 +111,7 @@ const InterestForm: FC<InterestFormProps> = ({ projects, onSubmit, onGetAISugges
                       <FormItem>
                         <FormLabel>Project of Interest</FormLabel>
                         <div className="flex gap-2 items-start">
-                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                           <Select onValueChange={field.onChange} defaultValue={field.value}>
                             <FormControl>
                               <SelectTrigger>
                                 <SelectValue placeholder="Select a Project" />

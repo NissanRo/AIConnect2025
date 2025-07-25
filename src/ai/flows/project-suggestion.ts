@@ -11,17 +11,31 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
+import type { Project } from '@/lib/types';
+
+const ProjectSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  objective: z.string(),
+  deliverables: z.array(z.string()),
+  tools: z.array(z.string()),
+  longTermScope: z.string(),
+  imageUrl: z.string(),
+  imageHint: z.string(),
+});
+
 
 const ApplicantProfileSchema = z.object({
   specialization: z.string().describe('The applicant\'s area of specialization, e.g., Computer Science, Electrical Engineering.'),
   skills: z.string().describe('A comma-separated list of the applicant\'s skills, e.g., programming, data analysis, machine learning.'),
+  projects: z.array(ProjectSchema).describe('A list of available projects to choose from.')
 });
 export type ApplicantProfile = z.infer<typeof ApplicantProfileSchema>;
 
 const ProjectSuggestionOutputSchema = z.object({
   suggestedProjects: z.array(
     z.object({
-      id: z.number().describe('The ID of the suggested project.'),
+      id: z.string().describe('The ID of the suggested project.'),
       title: z.string().describe('The title of the suggested project.'),
       reason: z.string().describe('The reason why this project is a good fit for the applicant based on their profile.'),
     })
@@ -42,10 +56,15 @@ const projectSuggestionPrompt = ai.definePrompt({
   output: {
     schema: ProjectSuggestionOutputSchema,
   },
-  prompt: `Given the following applicant profile, suggest the most suitable internship projects. Explain the reason for each suggestion.
+  prompt: `Given the following applicant profile and a list of available projects, suggest the most suitable internship projects. Explain the reason for each suggestion.
 
 Applicant Specialization: {{{specialization}}}
 Applicant Skills: {{{skills}}}
+
+Available Projects:
+{{#each projects}}
+- ID: {{id}}, Title: {{title}}, Objective: {{objective}}
+{{/each}}
 
 Return the suggested projects in JSON format:
 {{$instructions}}

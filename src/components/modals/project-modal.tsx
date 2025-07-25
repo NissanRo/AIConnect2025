@@ -27,36 +27,47 @@ type ProjectFormValues = z.infer<typeof projectSchema>;
 interface ProjectModalProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
-  onSave: (projectData: Omit<Project, 'id'>, id?: number) => void;
+  onSave: (projectData: Omit<Project, 'id'>, id?: string) => void;
   projectToEdit: Project | null;
 }
 
 export const ProjectModal: FC<ProjectModalProps> = ({ isOpen, onOpenChange, onSave, projectToEdit }) => {
   const form = useForm<ProjectFormValues>({
     resolver: zodResolver(projectSchema),
+    defaultValues: {
+      title: '',
+      objective: '',
+      deliverables: '',
+      tools: '',
+      longTermScope: '',
+      imageUrl: '',
+      imageHint: '',
+    }
   });
 
   const { reset, handleSubmit } = form;
 
   React.useEffect(() => {
-    if (projectToEdit) {
-      reset({
-        ...projectToEdit,
-        deliverables: projectToEdit.deliverables.join('\n'),
-        tools: projectToEdit.tools.join(', '),
-      });
-    } else {
-      reset({
-        title: '',
-        objective: '',
-        deliverables: '',
-        tools: '',
-        longTermScope: '',
-        imageUrl: 'https://placehold.co/600x400.png',
-        imageHint: '',
-      });
+    if (isOpen) {
+        if (projectToEdit) {
+          reset({
+            ...projectToEdit,
+            deliverables: projectToEdit.deliverables.join('\n'),
+            tools: projectToEdit.tools.join(', '),
+          });
+        } else {
+          reset({
+            title: '',
+            objective: '',
+            deliverables: '',
+            tools: '',
+            longTermScope: '',
+            imageUrl: 'https://placehold.co/600x400.png',
+            imageHint: '',
+          });
+        }
     }
-  }, [projectToEdit, reset]);
+  }, [projectToEdit, reset, isOpen]);
 
   const handleSaveSubmit = (values: ProjectFormValues) => {
     const projectData = {
@@ -65,7 +76,6 @@ export const ProjectModal: FC<ProjectModalProps> = ({ isOpen, onOpenChange, onSa
       tools: values.tools.split(',').map(s => s.trim()).filter(Boolean),
     };
     onSave(projectData, projectToEdit?.id);
-    onOpenChange(false);
   };
 
   return (

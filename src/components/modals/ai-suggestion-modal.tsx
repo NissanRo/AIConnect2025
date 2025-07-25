@@ -72,7 +72,7 @@ export const AiSuggestionModal: FC<AiSuggestionModalProps> = ({ isOpen, onOpenCh
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2 text-lg">
                             <Lightbulb className="text-primary h-5 w-5" />
-                            Project {proj.id}: {proj.title}
+                            Project: {proj.title}
                         </CardTitle>
                     </CardHeader>
                     <CardContent>

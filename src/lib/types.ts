@@ -1,5 +1,5 @@
 export interface Project {
-  id: number;
+  id: string;
   title: string;
   objective: string;
   deliverables: string[];
@@ -10,6 +10,7 @@ export interface Project {
 }
 
 export interface Application {
+  id: string;
   name: string;
   location: string;
   specialization: string;
@@ -20,5 +21,5 @@ export interface Application {
   email: string;
   workType: 'Team' | 'Individual';
   projectInterest: string;
-  projectId: number;
+  projectId: string;
 }

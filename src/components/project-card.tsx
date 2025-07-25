@@ -20,13 +20,14 @@ const ProjectCard: FC<ProjectCardProps> = ({ project, isAdmin, onEdit, onDelete 
         <Image
           src={project.imageUrl}
           alt={project.title}
-          layout="fill"
-          objectFit="cover"
+          fill
+          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+          className="object-cover"
           data-ai-hint={project.imageHint}
         />
       </div>
       <CardHeader>
-        <CardTitle className="text-xl">Project {project.id}: {project.title}</CardTitle>
+        <CardTitle className="text-xl">Project: {project.title}</CardTitle>
       </CardHeader>
       <CardContent className="flex-grow space-y-4">
         <p className="text-muted-foreground"><strong className="text-foreground">Objective:</strong> {project.objective}</p>
