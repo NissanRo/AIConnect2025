@@ -29,7 +29,7 @@ const AIConnectClientPage: FC<AIConnectClientPageProps> = ({ initialProjects }) 
   const [isAdmin, setIsAdmin] = useState(false);
   const [projects, setProjects] = useState<Project[]>(initialProjects);
   const [applications, setApplications] = useState<Application[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
   const [isReordering, setIsReordering] = useState(false);
@@ -48,23 +48,20 @@ const AIConnectClientPage: FC<AIConnectClientPageProps> = ({ initialProjects }) 
   const [aiSuggestionProfile, setAiSuggestionProfile] = useState<{ specialization: string, skills: string }>({ specialization: '', skills: '' });
 
   useEffect(() => {
-    const fetchData = async () => {
+    // Only fetch applications on mount, projects are passed in
+    const fetchApplications = async () => {
       setIsLoading(true);
       try {
-        const [projectsData, applicationsData] = await Promise.all([
-          getProjects(),
-          getApplications()
-        ]);
-        setProjects(projectsData);
+        const applicationsData = await getApplications();
         setApplications(applicationsData);
       } catch (error) {
-        console.error("Failed to fetch initial data", error);
-        toast({ title: "Error", description: "Failed to load page data. Please try again later.", variant: "destructive" });
+        console.error("Failed to fetch applications", error);
+        toast({ title: "Error", description: "Failed to load application data. Please try again later.", variant: "destructive" });
       }
       setIsLoading(false);
     };
 
-    fetchData();
+    fetchApplications();
   }, [toast]);
 
 
@@ -98,6 +95,7 @@ const AIConnectClientPage: FC<AIConnectClientPageProps> = ({ initialProjects }) 
   
   const handleLogout = () => {
     setIsAdmin(false);
+    setIsReordering(false);
     toast({ title: "Logged Out", description: "You have returned to the main page." });
   };
 
@@ -119,7 +117,7 @@ const AIConnectClientPage: FC<AIConnectClientPageProps> = ({ initialProjects }) 
             toast({ title: "Project Updated", description: `"${projectData.title}" has been successfully updated.` });
         } else {
             const newProject = await addProject(projectData);
-            setProjects(prevProjects => [...prevProjects, newProject]);
+            setProjects(prevProjects => [...prevProjects, newProject].sort((a,b) => a.order - b.order));
             toast({ title: "Project Added", description: `"${newProject.title}" has been successfully added.` });
         }
     } catch (error) {
@@ -169,31 +167,27 @@ const AIConnectClientPage: FC<AIConnectClientPageProps> = ({ initialProjects }) 
       if (newIndex < 0 || newIndex >= projects.length) return;
 
       const newProjects = [...projects];
-      const [movedProject] = newProjects.splice(currentIndex, 1);
-      newProjects.splice(newIndex, 0, movedProject);
+      // Swap positions
+      [newProjects[currentIndex], newProjects[newIndex]] = [newProjects[newIndex], newProjects[currentIndex]];
 
       const updatedOrder = newProjects.map((p, index) => ({ ...p, order: index + 1 }));
       setProjects(updatedOrder);
-  };
-  
-  const handleSaveOrder = () => {
+
+      // Automatically save the new order
       startTransition(async () => {
           try {
-              const orderToUpdate = projects.map(({id, order}) => ({id, order}));
+              const orderToUpdate = updatedOrder.map(({id, order}) => ({id, order}));
               await updateProjectsOrder(orderToUpdate);
-              toast({ title: "Order Saved", description: "The new project order has been saved." });
+              toast({ title: "Order Updated", description: "The new project order has been saved." });
           } catch(e) {
               toast({ title: "Error", description: "Failed to save the new order.", variant: "destructive" });
-              // Optionally refetch to revert optimistic update
+              // Revert optimistic update on failure
               const freshProjects = await getProjects();
               setProjects(freshProjects);
-          } finally {
-              setIsReordering(false);
           }
       });
   };
-
-
+  
   // Application handler
   const handleAddApplication = async (application: Omit<Application, 'id'>) => {
     try {
@@ -238,18 +232,12 @@ const AIConnectClientPage: FC<AIConnectClientPageProps> = ({ initialProjects }) 
 
         {isAdmin && (
           <div className="text-center mb-12 flex justify-center gap-4">
-            <Button size="lg" onClick={openAddProjectModal} disabled={isReordering}>
+            <Button size="lg" onClick={openAddProjectModal}>
               <Plus className="mr-2 h-5 w-5" /> Add New Project
             </Button>
-            {isReordering ? (
-                <Button size="lg" onClick={handleSaveOrder} disabled={isPending}>
-                    <Check className="mr-2 h-5 w-5" /> Save Order
-                </Button>
-            ) : (
-                <Button size="lg" variant="outline" onClick={() => setIsReordering(true)}>
-                    <ArrowUpDown className="mr-2 h-5 w-5" /> Reorder Projects
-                </Button>
-            )}
+            <Button size="lg" variant="outline" onClick={() => setIsReordering(!isReordering)} aria-pressed={isReordering}>
+                <ArrowUpDown className="mr-2 h-5 w-5" /> {isReordering ? "Done Reordering" : "Reorder Projects"}
+            </Button>
             <Button size="lg" variant="outline" onClick={handleLogout}>
               <LogOut className="mr-2 h-5 w-5" /> Return to Main Page
             </Button>
@@ -259,7 +247,7 @@ const AIConnectClientPage: FC<AIConnectClientPageProps> = ({ initialProjects }) 
         {isAdmin && <ApplicationsTable applications={applications} />}
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 my-12">
-            {isLoading ? renderProjectSkeletons() : projects.map((project, index) => (
+            {isLoading && !projects.length ? renderProjectSkeletons() : projects.map((project, index) => (
                 <ProjectCard
                     key={project.id}
                     project={project}
@@ -270,6 +258,7 @@ const AIConnectClientPage: FC<AIConnectClientPageProps> = ({ initialProjects }) 
                     onMove={handleMoveProject}
                     isFirst={index === 0}
                     isLast={index === projects.length - 1}
+                    isMoving={isPending}
                 />
             ))}
         </div>
@@ -294,3 +283,5 @@ const AIConnectClientPage: FC<AIConnectClientPageProps> = ({ initialProjects }) 
 };
 
 export default AIConnectClientPage;
+
+    

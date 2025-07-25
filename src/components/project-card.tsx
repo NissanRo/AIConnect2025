@@ -15,9 +15,10 @@ interface ProjectCardProps {
   onMove: (projectId: string, direction: 'up' | 'down') => void;
   isFirst: boolean;
   isLast: boolean;
+  isMoving: boolean;
 }
 
-const ProjectCard: FC<ProjectCardProps> = ({ project, isAdmin, isReordering, onEdit, onDelete, onMove, isFirst, isLast }) => {
+const ProjectCard: FC<ProjectCardProps> = ({ project, isAdmin, isReordering, onEdit, onDelete, onMove, isFirst, isLast, isMoving }) => {
   return (
     <Card className="flex flex-col overflow-hidden transition-transform duration-300 ease-in-out hover:-translate-y-1 hover:shadow-2xl">
       <div className="relative w-full h-48">
@@ -31,10 +32,10 @@ const ProjectCard: FC<ProjectCardProps> = ({ project, isAdmin, isReordering, onE
         />
         {isReordering && (
            <div className="absolute top-2 right-2 flex flex-col gap-2">
-            <Button size="icon" className="h-8 w-8" onClick={() => onMove(project.id, 'up')} disabled={isFirst}>
+            <Button size="icon" className="h-8 w-8" onClick={() => onMove(project.id, 'up')} disabled={isFirst || isMoving}>
                 <ArrowUp className="h-4 w-4" />
             </Button>
-            <Button size="icon" className="h-8 w-8" onClick={() => onMove(project.id, 'down')} disabled={isLast}>
+            <Button size="icon" className="h-8 w-8" onClick={() => onMove(project.id, 'down')} disabled={isLast || isMoving}>
                 <ArrowDown className="h-4 w-4" />
             </Button>
         </div>
@@ -73,3 +74,5 @@ const ProjectCard: FC<ProjectCardProps> = ({ project, isAdmin, isReordering, onE
 };
 
 export default ProjectCard;
+
+    
