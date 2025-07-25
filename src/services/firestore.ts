@@ -2,7 +2,7 @@
 'use server';
 
 import { db } from '@/lib/firebase';
-import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, query, orderBy, runTransaction } from 'firebase/firestore';
+import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, query, orderBy, runTransaction, writeBatch } from 'firebase/firestore';
 import type { Project, Application } from '@/lib/types';
 import { initialProjects } from '@/data/initial-projects';
 
@@ -14,11 +14,28 @@ export async function seedInitialProjects() {
     const projectsSnapshot = await getDocs(collection(db, PROJECTS_COLLECTION));
     if (projectsSnapshot.empty) {
         console.log('No projects found, seeding initial projects...');
-        const promises = initialProjects.map(project => {
-            return addDoc(collection(db, PROJECTS_COLLECTION), project);
+        const batch = writeBatch(db);
+        initialProjects.forEach((project, index) => {
+            const docRef = doc(collection(db, PROJECTS_COLLECTION));
+            batch.set(docRef, { ...project, order: index + 1 });
         });
-        await Promise.all(promises);
+        await batch.commit();
         console.log('Initial projects seeded.');
+    } else {
+        // One-time migration for existing projects that don't have an order
+        const batch = writeBatch(db);
+        let order = 1;
+        const projectsToMigrate = projectsSnapshot.docs.filter(doc => doc.data().order === undefined);
+        if (projectsToMigrate.length > 0) {
+            console.log(`Migrating ${projectsToMigrate.length} projects to add order field...`);
+            // Sort by code to give a predictable initial order
+            const sortedDocs = projectsToMigrate.sort((a,b) => a.data().code.localeCompare(b.data().code));
+            sortedDocs.forEach(docSnapshot => {
+                batch.update(docSnapshot.ref, { order: order++ });
+            });
+            await batch.commit();
+            console.log('Projects migrated.');
+        }
     }
 }
 
@@ -26,26 +43,38 @@ export async function seedInitialProjects() {
 // Project Functions
 export async function getProjects(): Promise<Project[]> {
   await seedInitialProjects();
-  const projectsCollection = query(collection(db, PROJECTS_COLLECTION), orderBy("code"));
+  const projectsCollection = query(collection(db, PROJECTS_COLLECTION), orderBy("order"));
   const projectsSnapshot = await getDocs(projectsCollection);
   return projectsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Project));
 }
 
-export async function addProject(project: Omit<Project, 'id' | 'code'>): Promise<string> {
+export async function addProject(project: Omit<Project, 'id' | 'code' | 'order'>): Promise<string> {
   const projectsRef = collection(db, PROJECTS_COLLECTION);
   
   return runTransaction(db, async (transaction) => {
     const projectsQuery = query(projectsRef, orderBy('code', 'desc'));
-    const snapshot = await getDocs(projectsQuery);
+    const orderQuery = query(projectsRef, orderBy('order', 'desc'));
+    
+    const [codeSnapshot, orderSnapshot] = await Promise.all([
+        getDocs(projectsQuery),
+        getDocs(orderQuery)
+    ]);
+    
     let newCode = 'PROJ-001';
-    if (!snapshot.empty) {
-      const lastProject = snapshot.docs[0].data() as Project;
+    if (!codeSnapshot.empty) {
+      const lastProject = codeSnapshot.docs[0].data() as Project;
       const lastCodeNumber = parseInt(lastProject.code.split('-')[1]);
       const newCodeNumber = lastCodeNumber + 1;
       newCode = `PROJ-${newCodeNumber.toString().padStart(3, '0')}`;
     }
+
+    let newOrder = 1;
+    if (!orderSnapshot.empty) {
+        const lastProjectByOrder = orderSnapshot.docs[0].data() as Project;
+        newOrder = lastProjectByOrder.order + 1;
+    }
     
-    const newProjectData = { ...project, code: newCode };
+    const newProjectData = { ...project, code: newCode, order: newOrder };
     const docRef = doc(projectsRef); // create a new doc reference with an auto-generated ID
     transaction.set(docRef, newProjectData);
     return docRef.id;
@@ -57,6 +86,16 @@ export async function updateProject(id: string, project: Partial<Omit<Project, '
   const projectRef = doc(db, PROJECTS_COLLECTION, id);
   await updateDoc(projectRef, project);
 }
+
+export async function updateProjectsOrder(projects: Pick<Project, 'id' | 'order'>[]) {
+    const batch = writeBatch(db);
+    projects.forEach(project => {
+        const projectRef = doc(db, PROJECTS_COLLECTION, project.id);
+        batch.update(projectRef, { order: project.order });
+    });
+    await batch.commit();
+}
+
 
 export async function deleteProject(id: string) {
   const projectRef = doc(db, PROJECTS_COLLECTION, id);

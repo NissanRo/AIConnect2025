@@ -1,7 +1,7 @@
 'use server'
 
 import { suggestProjects, type ApplicantProfile, type ProjectSuggestionOutput } from '@/ai/flows/project-suggestion'
-import { getProjects as getProjectsFromDb, addProject as addProjectToDb, updateProject as updateProjectInDb, deleteProject as deleteProjectFromDb, addApplication as addApplicationToDb, getApplications as getApplicationsFromDb } from '@/services/firestore';
+import { getProjects as getProjectsFromDb, addProject as addProjectToDb, updateProject as updateProjectInDb, deleteProject as deleteProjectFromDb, addApplication as addApplicationToDb, getApplications as getApplicationsFromDb, updateProjectsOrder as updateProjectsOrderInDb } from '@/services/firestore';
 import type { Project, Application } from '@/lib/types';
 
 export async function getProjectSuggestions(data: ApplicantProfile): Promise<ProjectSuggestionOutput | { error: string }> {
@@ -22,10 +22,8 @@ export async function getProjects(): Promise<Project[]> {
     return await getProjectsFromDb();
 }
 
-export async function addProject(project: Omit<Project, 'id'| 'code'>): Promise<Project> {
+export async function addProject(project: Omit<Project, 'id'| 'code' | 'order'>): Promise<Project> {
     const id = await addProjectToDb(project);
-    // This is not perfect, as we don't get the generated code back, but it's a simple way to reflect the change on the client
-    // A better implementation would be to get the full project object back from addProjectToDb
     const projects = await getProjectsFromDb();
     const newProject = projects.find(p => p.id === id);
     if (!newProject) {
@@ -36,6 +34,10 @@ export async function addProject(project: Omit<Project, 'id'| 'code'>): Promise<
 
 export async function updateProject(id: string, project: Omit<Project, 'id'>) {
     await updateProjectInDb(id, project);
+}
+
+export async function updateProjectsOrder(projects: Pick<Project, 'id' | 'order'>[]) {
+    await updateProjectsOrderInDb(projects);
 }
 
 export async function deleteProject(id: string) {

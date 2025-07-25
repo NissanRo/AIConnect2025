@@ -8,6 +8,7 @@ export interface Project {
   longTermScope: string;
   imageUrl: string;
   imageHint: string;
+  order: number;
 }
 
 export interface Application {
