@@ -5,6 +5,7 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/componen
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Pencil, Trash2 } from 'lucide-react';
+import { getColor } from '@/lib/colors';
 
 interface ProjectCardProps {
   project: Project;
@@ -17,7 +18,8 @@ interface ProjectCardProps {
 const ProjectCard: FC<ProjectCardProps> = ({ project, projectNumber, isAdmin, onEdit, onDelete }) => {
   const getImageUrl = () => {
     if (project.imageUrl && project.imageUrl.startsWith('https://placehold.co')) {
-      return `https://placehold.co/600x400/eeeeee/cccccc.png?text=Project+${projectNumber}`;
+      const { bg, text } = getColor(projectNumber - 1);
+      return `https://placehold.co/600x400/${bg}/${text}.png?text=Project+${projectNumber}`;
     }
     return project.imageUrl;
   }

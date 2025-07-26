@@ -1,4 +1,5 @@
 import type { Project } from '@/lib/types';
+import { getColor } from '@/lib/colors';
 
 const initialProjectDetails: Omit<Project, 'id' | 'code' | 'order'>[] = [
     { title: 'AI-Powered Lead Generation & Qualification Bot', objective: 'Build an AI chatbot integrated with WhatsApp/Instagram to engage, capture, and qualify leads.', deliverables: ['Chatbot to collect Name, Course/Service Interest, Contact Details', 'Auto-replies to FAQs using AI (OpenAI or Gemini)', 'Google Sheet/Airtable Integration'], tools: ['n8n (self-hosted)', 'WhatsApp Cloud API', 'Instagram Messaging API', 'Gemini/OpenAI'], longTermScope: 'Advanced lead scoring + CRM integration for conversion funneling.', imageUrl: 'https://placehold.co/600x400/63B3ED/FFFFFF.png', imageHint: 'chatbot ai' },
@@ -25,6 +26,7 @@ export const initialProjects: Project[] = Array.from({ length: 100 }, (_, i) => 
             ...initialProjectDetails[i],
         };
     } else {
+        const { bg, text } = getColor(i);
         return {
             id: `proj-${order}`,
             code: projectCode,
@@ -34,7 +36,7 @@ export const initialProjects: Project[] = Array.from({ length: 100 }, (_, i) => 
             deliverables: [],
             tools: [],
             longTermScope: '',
-            imageUrl: 'https://placehold.co/600x400/eeeeee/cccccc.png?text=Empty+Slot',
+            imageUrl: `https://placehold.co/600x400/${bg}/${text}.png?text=Empty+Slot`,
             imageHint: 'placeholder empty',
         };
     }
