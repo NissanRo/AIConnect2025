@@ -26,7 +26,7 @@ const ApplicationsTable: FC<ApplicationsTableProps> = ({ applications }) => {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Name</TableHead>
-                    <TableHead>Project Interests</TableHead>
+                    <TableHead>Project Interest</TableHead>
                     <TableHead>Contact</TableHead>
                     <TableHead>College</TableHead>
                     <TableHead>Grad Year</TableHead>
@@ -38,9 +38,7 @@ const ApplicationsTable: FC<ApplicationsTableProps> = ({ applications }) => {
                     <TableRow key={index}>
                       <TableCell className="font-medium">{app.name}</TableCell>
                       <TableCell>
-                        <div className="flex flex-wrap gap-2">
-                           {app.projectInterests.map(interest => <Badge key={interest} variant="secondary">{interest}</Badge>)}
-                        </div>
+                        <Badge variant="secondary">{app.projectInterest}</Badge>
                       </TableCell>
                       <TableCell>{app.email}<br />{app.contact}</TableCell>
                       <TableCell>{app.college}</TableCell>

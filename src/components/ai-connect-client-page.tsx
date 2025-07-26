@@ -122,12 +122,9 @@ const AIConnectClientPage: FC = () => {
     const newApplication = { ...application, id: newId };
     setApplications(prev => [...prev, newApplication]);
     
-    // Prepare data for Formspree
     const formData = new FormData();
     Object.entries(newApplication).forEach(([key, value]) => {
-      if(key === 'projectInterests') {
-        formData.append('Projects of Interest', value.join(', '));
-      } else if(key !== 'projectIds' && key !== 'id') {
+      if(key !== 'id') {
         formData.append(key, value as string);
       }
     });

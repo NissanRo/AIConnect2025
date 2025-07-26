@@ -22,6 +22,6 @@ export interface Application {
   contact: string;
   email: string;
   workType: 'Team' | 'Individual';
-  projectInterests: string[]; // Changed from single to multiple
-  projectIds: string[]; // Changed from single to multiple
+  projectInterest: string;
+  projectId: string; 
 }

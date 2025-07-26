@@ -10,9 +10,9 @@ import { Input } from '@/components/ui/input';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Send } from 'lucide-react';
 import type { Project, Application } from '@/lib/types';
-import { MultiSelectDropdown } from '@/components/multi-select-dropdown';
 
 
 const applicationSchema = z.object({
@@ -25,7 +25,7 @@ const applicationSchema = z.object({
   contact: z.string().min(10, 'A valid contact number is required.'),
   email: z.string().email('Please enter a valid email address.'),
   workType: z.enum(['Team', 'Individual'], { required_error: 'Please select a work type.' }),
-  projectIds: z.array(z.string()).min(1, 'Please select at least one project of interest.'),
+  projectId: z.string({ required_error: 'Please select a project.' }),
 });
 
 
@@ -48,20 +48,17 @@ const InterestForm: FC<InterestFormProps> = ({ projects, onFormSubmit }) => {
       skills: '',
       contact: '',
       email: '',
-      projectIds: [],
     },
   });
 
   const { handleSubmit, control, reset, formState: { isSubmitting } } = form;
 
   const processSubmit = (values: ApplicationFormValues) => {
-    const projectInterests = projects.filter(p => values.projectIds.includes(p.id)).map(p => p.title);
-    onFormSubmit({ ...values, projectInterests });
+    const projectInterest = projects.find(p => p.id === values.projectId)?.title || '';
+    onFormSubmit({ ...values, projectInterest });
     reset();
   };
   
-  const projectOptions = projects.map(p => ({ value: p.id, label: `${p.code}: ${p.title}`}));
-
   return (
     <section id="interestFormSection" className="max-w-4xl mx-auto my-16">
       <Card>
@@ -96,16 +93,24 @@ const InterestForm: FC<InterestFormProps> = ({ projects, onFormSubmit }) => {
 
                 <FormField
                   control={control}
-                  name="projectIds"
+                  name="projectId"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Projects of Interest</FormLabel>
-                      <MultiSelectDropdown
-                        options={projectOptions}
-                        selected={field.value}
-                        onChange={field.onChange}
-                        placeholder="Select one or more projects..."
-                      />
+                      <FormLabel>Project of Interest</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select a project" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {projects.map(p => (
+                            <SelectItem key={p.id} value={p.id}>
+                              {p.code}: {p.title}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                       <FormMessage />
                     </FormItem>
                   )}
