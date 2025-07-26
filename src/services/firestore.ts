@@ -9,6 +9,23 @@ import { initialProjects } from '@/data/initial-projects';
 const PROJECTS_COLLECTION = 'projects';
 const APPLICATIONS_COLLECTION = 'applications';
 
+async function isFirestoreAvailable(): Promise<boolean> {
+    try {
+        // Try a simple read to check connectivity and permissions
+        await getDoc(doc(db, '_health', 'check'));
+        return true;
+    } catch (error: any) {
+        if (error.code === 'permission-denied' || error.code === 'unimplemented' || error.code === 'unavailable') {
+            console.warn('Firestore is not available or permissions are denied. Falling back to local data.');
+            return false;
+        }
+        // For other errors, we might want to let them surface
+        console.error("An unexpected error occurred while checking Firestore availability:", error);
+        return false;
+    }
+}
+
+
 // Seed initial projects if the collection is empty
 export async function seedInitialProjects() {
     const projectsSnapshot = await getDocs(collection(db, PROJECTS_COLLECTION));
@@ -42,10 +59,21 @@ export async function seedInitialProjects() {
 
 // Project Functions
 export async function getProjects(): Promise<Project[]> {
-  await seedInitialProjects();
-  const projectsCollection = query(collection(db, PROJECTS_COLLECTION), orderBy("order"));
-  const projectsSnapshot = await getDocs(projectsCollection);
-  return projectsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Project));
+    const available = await isFirestoreAvailable();
+    if (!available) {
+        // Firestore is not set up, return the initial hardcoded data with IDs
+        return initialProjects.map((p, i) => ({ ...p, id: `local-${i+1}` }));
+    }
+  
+    try {
+        await seedInitialProjects();
+        const projectsCollection = query(collection(db, PROJECTS_COLLECTION), orderBy("order"));
+        const projectsSnapshot = await getDocs(projectsCollection);
+        return projectsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Project));
+    } catch (error) {
+        console.error("Error fetching projects from Firestore, falling back to local data:", error);
+        return initialProjects.map((p, i) => ({ ...p, id: `local-${i+1}` }));
+    }
 }
 
 export async function addProject(project: Omit<Project, 'id' | 'code' | 'order'>): Promise<string> {
@@ -103,9 +131,17 @@ export async function deleteProject(id: string) {
 
 // Application Functions
 export async function getApplications(): Promise<Application[]> {
-  const applicationsCollection = query(collection(db, APPLICATIONS_COLLECTION), orderBy("name"));
-  const appsSnapshot = await getDocs(applicationsCollection);
-  return appsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as unknown as Application));
+    const available = await isFirestoreAvailable();
+    if (!available) return [];
+
+    try {
+        const applicationsCollection = query(collection(db, APPLICATIONS_COLLECTION), orderBy("name"));
+        const appsSnapshot = await getDocs(applicationsCollection);
+        return appsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as unknown as Application));
+    } catch (error) {
+        console.error("Error fetching applications from Firestore:", error);
+        return [];
+    }
 }
 
 export async function addApplication(application: Omit<Application, 'id'>) {
