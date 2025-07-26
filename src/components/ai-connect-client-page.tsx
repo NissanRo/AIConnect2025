@@ -106,7 +106,7 @@ const AIConnectClientPage: FC = () => {
                 deliverables: [],
                 tools: [],
                 longTermScope: '',
-                imageUrl: 'https://placehold.co/600x400/eeeeee/cccccc.png?text=Empty+Slot',
+                imageUrl: 'https://placehold.co/600x400.png',
                 imageHint: 'placeholder empty',
             };
             setProjects(projects.map(p => p.id === projectToDelete ? placeholderProject : p));
@@ -152,10 +152,11 @@ const AIConnectClientPage: FC = () => {
         )}
 
         <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8 my-12">
-            {visibleProjects.map((project) => (
+            {visibleProjects.map((project, index) => (
                 <ProjectCard
                     key={project.id}
                     project={project}
+                    projectNumber={index + 1}
                     isAdmin={isAdmin}
                     onEdit={() => handleOpenProjectModal(project)}
                     onDelete={() => handleDeleteProject(project.id)}
@@ -163,7 +164,7 @@ const AIConnectClientPage: FC = () => {
             ))}
         </div>
 
-        <InterestForm projects={visibleProjects} onFormSubmit={handleFormSubmit} />
+        <InterestForm projects={visibleProjects} onFormSubmit={() => setConfirmModalOpen(true)} />
 
         <Footer />
       </div>

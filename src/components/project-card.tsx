@@ -8,17 +8,25 @@ import { Pencil, Trash2 } from 'lucide-react';
 
 interface ProjectCardProps {
   project: Project;
+  projectNumber: number;
   isAdmin: boolean;
   onEdit: () => void;
   onDelete: () => void;
 }
 
-const ProjectCard: FC<ProjectCardProps> = ({ project, isAdmin, onEdit, onDelete }) => {
+const ProjectCard: FC<ProjectCardProps> = ({ project, projectNumber, isAdmin, onEdit, onDelete }) => {
+  const getImageUrl = () => {
+    if (project.imageUrl && project.imageUrl.startsWith('https://placehold.co')) {
+      return `https://placehold.co/600x400/eeeeee/cccccc.png?text=Project+${projectNumber}`;
+    }
+    return project.imageUrl;
+  }
+  
   return (
     <Card className="flex flex-col overflow-hidden transition-transform duration-300 ease-in-out hover:-translate-y-1 hover:shadow-2xl">
       <div className="relative w-full h-48">
         <Image
-          src={project.imageUrl}
+          src={getImageUrl()}
           alt={project.title}
           fill
           sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
