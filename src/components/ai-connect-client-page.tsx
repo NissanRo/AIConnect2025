@@ -9,7 +9,6 @@ import Header from '@/components/header';
 import AboutSection from '@/components/about-section';
 import ProjectCard from '@/components/project-card';
 import InterestForm from '@/components/interest-form';
-import ApplicationsTable from '@/components/admin/applications-table';
 import Footer from '@/components/footer';
 import { Button } from '@/components/ui/button';
 import { Plus, LogOut } from 'lucide-react';
@@ -21,7 +20,6 @@ import { SubmissionConfirmModal } from '@/components/modals/submission-confirm-m
 const AIConnectClientPage: FC = () => {
   const [isAdmin, setIsAdmin] = useState(false);
   const [projects, setProjects] = useState<Project[]>(initialProjects);
-  const [applications, setApplications] = useState<Application[]>([]);
   const { toast } = useToast();
 
   const [isLoginModalOpen, setLoginModalOpen] = useState(false);
@@ -117,14 +115,19 @@ const AIConnectClientPage: FC = () => {
     setProjectToDelete(null);
   };
   
-  const handleFormSubmit = async (application: Omit<Application, 'id'>) => {
-    const newId = `app-${Date.now()}`;
-    const newApplication = { ...application, id: newId };
-    setApplications(prev => [...prev, newApplication]);
-    
+  const handleFormSubmit = async (application: Omit<Application, 'id' | 'projectInterest'>) => {
     const formData = new FormData();
-    Object.entries(newApplication).forEach(([key, value]) => {
-      if(key !== 'id') {
+    const projectInterest = projects.find(p => p.id === application.projectId)?.title || 'N/A';
+    
+    const dataToSubmit: Record<string, string | string[]> = {
+        ...application,
+        projectInterest,
+    };
+
+    Object.entries(dataToSubmit).forEach(([key, value]) => {
+      if (Array.isArray(value)) {
+        value.forEach(v => formData.append(key + '[]', v));
+      } else {
         formData.append(key, value as string);
       }
     });
@@ -171,7 +174,6 @@ const AIConnectClientPage: FC = () => {
                         <Button variant="outline" onClick={handleLogout}><LogOut className="mr-2 h-4 w-4" /> Logout</Button>
                     </div>
                 </div>
-                 <ApplicationsTable applications={applications} />
             </div>
         )}
 
