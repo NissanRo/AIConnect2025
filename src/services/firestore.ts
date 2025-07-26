@@ -9,51 +9,19 @@ import { initialProjects } from '@/data/initial-projects';
 const PROJECTS_COLLECTION = 'projects';
 const APPLICATIONS_COLLECTION = 'applications';
 
-// Seed initial projects if the collection is empty
-export async function seedInitialProjects() {
-    try {
-        const projectsSnapshot = await getDocs(collection(db, PROJECTS_COLLECTION));
-        if (projectsSnapshot.empty) {
-            console.log('No projects found, seeding initial projects...');
-            const batch = writeBatch(db);
-            initialProjects.forEach((project) => {
-                const docRef = doc(collection(db, PROJECTS_COLLECTION));
-                batch.set(docRef, project);
-            });
-            await batch.commit();
-            console.log('Initial projects seeded.');
-        } else {
-             // One-time migration for existing projects that don't have an order
-            const batch = writeBatch(db);
-            let order = 1;
-            const projectsToMigrate = projectsSnapshot.docs.filter(doc => doc.data().order === undefined);
-            if (projectsToMigrate.length > 0) {
-                console.log(`Migrating ${projectsToMigrate.length} projects to add order field...`);
-                // Sort by code to give a predictable initial order
-                const sortedDocs = projectsToMigrate.sort((a,b) => a.data().code.localeCompare(b.data().code));
-                sortedDocs.forEach(docSnapshot => {
-                    batch.update(docSnapshot.ref, { order: order++ });
-                });
-                await batch.commit();
-                console.log('Projects migrated.');
-            }
-        }
-    } catch (error) {
-        console.error("Error during project seeding or migration:", error);
-    }
-}
-
-
 // Project Functions
 export async function getProjects(): Promise<Project[]> {
     try {
-        await seedInitialProjects();
         const projectsCollection = query(collection(db, PROJECTS_COLLECTION), orderBy("order"));
         const projectsSnapshot = await getDocs(projectsCollection);
+        if (projectsSnapshot.empty) {
+            console.warn("Projects collection is empty. Run 'npm run db:seed' to populate it.");
+            return [];
+        }
         return projectsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Project));
     } catch (error) {
-        console.error("Error fetching projects from Firestore, falling back to local data:", error);
-        // Fallback to local data if there is an error after enabling the API
+        console.error("Error fetching projects from Firestore:", error);
+        // Fallback to local data if there is an error
         return initialProjects.map((p, i) => ({ ...p, id: `local-${i+1}` }));
     }
 }
@@ -62,7 +30,6 @@ export async function addProject(project: Omit<Project, 'id' | 'code' | 'order'>
   const projectsRef = collection(db, PROJECTS_COLLECTION);
   
   return runTransaction(db, async (transaction) => {
-    // We need to query for the project with the highest code and highest order to determine the next values
     const codeQuery = query(projectsRef, orderBy('code', 'desc'));
     const orderQuery = query(projectsRef, orderBy('order', 'desc'));
     
@@ -84,7 +51,7 @@ export async function addProject(project: Omit<Project, 'id' | 'code' | 'order'>
     }
     
     const newProjectData = { ...project, code: newCode, order: newOrder };
-    const docRef = doc(projectsRef); // create a new doc reference with an auto-generated ID
+    const docRef = doc(projectsRef);
     transaction.set(docRef, newProjectData);
     return docRef.id;
   });
