@@ -52,7 +52,7 @@ export const ProjectModal: FC<ProjectModalProps> = ({ isOpen, onOpenChange, onSa
         if (projectToEdit) {
           reset({
             ...projectToEdit,
-            deliverables: projectToEdit.deliverables.join('\\n'),
+            deliverables: projectToEdit.deliverables.join('\n'),
             tools: projectToEdit.tools.join(', '),
           });
         } else {
@@ -72,7 +72,7 @@ export const ProjectModal: FC<ProjectModalProps> = ({ isOpen, onOpenChange, onSa
   const handleSaveSubmit = (values: ProjectFormValues) => {
     const projectData = {
       ...values,
-      deliverables: values.deliverables.split('\\n').map(s => s.trim()).filter(Boolean),
+      deliverables: values.deliverables.split('\n').map(s => s.trim()).filter(Boolean),
       tools: values.tools.split(',').map(s => s.trim()).filter(Boolean),
     };
     onSave(projectData, projectToEdit?.id);
