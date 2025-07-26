@@ -9,62 +9,44 @@ import { initialProjects } from '@/data/initial-projects';
 const PROJECTS_COLLECTION = 'projects';
 const APPLICATIONS_COLLECTION = 'applications';
 
-async function isFirestoreAvailable(): Promise<boolean> {
-    try {
-        // Try a simple read to check connectivity and permissions
-        await getDoc(doc(db, '_health', 'check'));
-        return true;
-    } catch (error: any) {
-        if (error.code === 'permission-denied' || error.code === 'unimplemented' || error.code === 'unavailable') {
-            console.warn('Firestore is not available or permissions are denied. Falling back to local data.');
-            return false;
-        }
-        // For other errors, we might want to let them surface
-        console.error("An unexpected error occurred while checking Firestore availability:", error);
-        return false;
-    }
-}
-
-
 // Seed initial projects if the collection is empty
 export async function seedInitialProjects() {
-    const projectsSnapshot = await getDocs(collection(db, PROJECTS_COLLECTION));
-    if (projectsSnapshot.empty) {
-        console.log('No projects found, seeding initial projects...');
-        const batch = writeBatch(db);
-        initialProjects.forEach((project, index) => {
-            const docRef = doc(collection(db, PROJECTS_COLLECTION));
-            batch.set(docRef, { ...project, order: index + 1 });
-        });
-        await batch.commit();
-        console.log('Initial projects seeded.');
-    } else {
-        // One-time migration for existing projects that don't have an order
-        const batch = writeBatch(db);
-        let order = 1;
-        const projectsToMigrate = projectsSnapshot.docs.filter(doc => doc.data().order === undefined);
-        if (projectsToMigrate.length > 0) {
-            console.log(`Migrating ${projectsToMigrate.length} projects to add order field...`);
-            // Sort by code to give a predictable initial order
-            const sortedDocs = projectsToMigrate.sort((a,b) => a.data().code.localeCompare(b.data().code));
-            sortedDocs.forEach(docSnapshot => {
-                batch.update(docSnapshot.ref, { order: order++ });
+    try {
+        const projectsSnapshot = await getDocs(collection(db, PROJECTS_COLLECTION));
+        if (projectsSnapshot.empty) {
+            console.log('No projects found, seeding initial projects...');
+            const batch = writeBatch(db);
+            initialProjects.forEach((project, index) => {
+                const docRef = doc(collection(db, PROJECTS_COLLECTION));
+                batch.set(docRef, { ...project, order: index + 1 });
             });
             await batch.commit();
-            console.log('Projects migrated.');
+            console.log('Initial projects seeded.');
+        } else {
+            // One-time migration for existing projects that don't have an order
+            const batch = writeBatch(db);
+            let order = 1;
+            const projectsToMigrate = projectsSnapshot.docs.filter(doc => doc.data().order === undefined);
+            if (projectsToMigrate.length > 0) {
+                console.log(`Migrating ${projectsToMigrate.length} projects to add order field...`);
+                // Sort by code to give a predictable initial order
+                const sortedDocs = projectsToMigrate.sort((a,b) => a.data().code.localeCompare(b.data().code));
+                sortedDocs.forEach(docSnapshot => {
+                    batch.update(docSnapshot.ref, { order: order++ });
+                });
+                await batch.commit();
+                console.log('Projects migrated.');
+            }
         }
+    } catch (error) {
+        console.error("Error during project seeding or migration:", error);
+        // If seeding fails, we might still be able to read existing data.
     }
 }
 
 
 // Project Functions
 export async function getProjects(): Promise<Project[]> {
-    const available = await isFirestoreAvailable();
-    if (!available) {
-        // Firestore is not set up, return the initial hardcoded data with IDs
-        return initialProjects.map((p, i) => ({ ...p, id: `local-${i+1}` }));
-    }
-  
     try {
         await seedInitialProjects();
         const projectsCollection = query(collection(db, PROJECTS_COLLECTION), orderBy("order"));
@@ -72,6 +54,7 @@ export async function getProjects(): Promise<Project[]> {
         return projectsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Project));
     } catch (error) {
         console.error("Error fetching projects from Firestore, falling back to local data:", error);
+        // Fallback to local data if there is an error after enabling the API
         return initialProjects.map((p, i) => ({ ...p, id: `local-${i+1}` }));
     }
 }
@@ -131,9 +114,6 @@ export async function deleteProject(id: string) {
 
 // Application Functions
 export async function getApplications(): Promise<Application[]> {
-    const available = await isFirestoreAvailable();
-    if (!available) return [];
-
     try {
         const applicationsCollection = query(collection(db, APPLICATIONS_COLLECTION), orderBy("name"));
         const appsSnapshot = await getDocs(applicationsCollection);
