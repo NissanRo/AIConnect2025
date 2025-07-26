@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -19,7 +20,7 @@ import { SubmissionConfirmModal } from '@/components/modals/submission-confirm-m
 
 const AIConnectClientPage: FC = () => {
   const [isAdmin, setIsAdmin] = useState(false);
-  const [projects, setProjects] = useState<Project[]>(initialProjects);
+  const [projects, setProjects] = useState<Project[]>([]);
   const { toast } = useToast();
 
   const [isLoginModalOpen, setLoginModalOpen] = useState(false);
@@ -31,6 +32,31 @@ const AIConnectClientPage: FC = () => {
   const [projectToDelete, setProjectToDelete] = useState<string | null>(null);
 
   const [logoClickCount, setLogoClickCount] = useState(0);
+
+  useEffect(() => {
+    try {
+      const savedProjects = localStorage.getItem('ai-connect-projects');
+      if (savedProjects) {
+        setProjects(JSON.parse(savedProjects));
+      } else {
+        setProjects(initialProjects);
+      }
+    } catch (error) {
+        console.error("Failed to load projects from localStorage", error);
+        setProjects(initialProjects);
+    }
+  }, []);
+
+  useEffect(() => {
+    try {
+        if (projects.length > 0) {
+            localStorage.setItem('ai-connect-projects', JSON.stringify(projects));
+        }
+    } catch (error) {
+        console.error("Failed to save projects to localStorage", error);
+    }
+  }, [projects]);
+  
   useEffect(() => {
     if (logoClickCount > 0) {
       const timer = setTimeout(() => setLogoClickCount(0), 2000);
