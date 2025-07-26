@@ -7,8 +7,6 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Checkbox } from '@/components/ui/checkbox';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -54,7 +52,7 @@ const InterestForm: FC<InterestFormProps> = ({ projects, onFormSubmit }) => {
     },
   });
 
-  const { handleSubmit, control, reset } = form;
+  const { handleSubmit, control, reset, formState: { isSubmitting } } = form;
 
   const processSubmit = (values: ApplicationFormValues) => {
     const projectInterests = projects.filter(p => values.projectIds.includes(p.id)).map(p => p.title);
@@ -113,9 +111,9 @@ const InterestForm: FC<InterestFormProps> = ({ projects, onFormSubmit }) => {
                   )}
                 />
 
-                <Button type="submit" className="w-full bg-accent text-accent-foreground hover:bg-accent/90">
+                <Button type="submit" className="w-full bg-accent text-accent-foreground hover:bg-accent/90" disabled={isSubmitting}>
                     <Send className="mr-2 h-4 w-4" />
-                    Submit Interest
+                    {isSubmitting ? 'Submitting...' : 'Submit Interest'}
                 </Button>
             </form>
           </Form>

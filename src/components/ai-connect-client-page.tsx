@@ -117,10 +117,37 @@ const AIConnectClientPage: FC = () => {
     setProjectToDelete(null);
   };
   
-  const handleFormSubmit = (application: Omit<Application, 'id'>) => {
+  const handleFormSubmit = async (application: Omit<Application, 'id'>) => {
     const newId = `app-${Date.now()}`;
-    setApplications(prev => [...prev, { ...application, id: newId }]);
-    setConfirmModalOpen(true);
+    const newApplication = { ...application, id: newId };
+    setApplications(prev => [...prev, newApplication]);
+    
+    // Prepare data for Formspree
+    const formData = new FormData();
+    Object.entries(newApplication).forEach(([key, value]) => {
+      if(key === 'projectInterests') {
+        formData.append('Projects of Interest', value.join(', '));
+      } else if(key !== 'projectIds' && key !== 'id') {
+        formData.append(key, value as string);
+      }
+    });
+
+    try {
+      const response = await fetch('https://formspree.io/f/mwpqorgp', {
+        method: 'POST',
+        body: formData,
+        headers: {
+          'Accept': 'application/json'
+        }
+      });
+      if (response.ok) {
+        setConfirmModalOpen(true);
+      } else {
+        toast({ title: "Submission Error", description: "Could not submit the form. Please try again.", variant: "destructive" });
+      }
+    } catch (error) {
+       toast({ title: "Submission Error", description: "An error occurred. Please try again.", variant: "destructive" });
+    }
   };
 
   const visibleProjects = projects.filter(p => !p.title.startsWith('Placeholder')).sort((a,b) => a.order - b.order);
@@ -164,7 +191,7 @@ const AIConnectClientPage: FC = () => {
             ))}
         </div>
 
-        <InterestForm projects={visibleProjects} onFormSubmit={() => setConfirmModalOpen(true)} />
+        <InterestForm projects={visibleProjects} onFormSubmit={handleFormSubmit} />
 
         <Footer />
       </div>
