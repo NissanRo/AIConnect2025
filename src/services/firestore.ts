@@ -14,14 +14,22 @@ export async function getProjects(): Promise<Project[]> {
     try {
         const projectsCollection = query(collection(db, PROJECTS_COLLECTION), orderBy("order"));
         const projectsSnapshot = await getDocs(projectsCollection);
+        
+        // This check is important. If you've just created your database,
+        // it will be empty. Run `npm run db:seed` to populate it with initial data.
         if (projectsSnapshot.empty) {
-            console.warn("Projects collection is empty. Run 'npm run db:seed' to populate it.");
+            console.warn("Firestore 'projects' collection is empty. You can seed it by running 'npm run db:seed'");
             return [];
         }
         return projectsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Project));
     } catch (error) {
         console.error("Error fetching projects from Firestore:", error);
-        // Fallback to local data if there is an error
+        // This fallback is crucial for development if Firestore isn't set up yet.
+        // It allows the app to run with local data.
+        // To use Firestore, you must:
+        // 1. Enable the Firestore API in your Google Cloud project.
+        // 2. CREATE a Firestore database in the Firebase console (select a region).
+        console.warn("FALLBACK: Serving local project data. Please ensure Firestore is enabled AND a database has been created in the Firebase console.");
         return initialProjects.map((p, i) => ({ ...p, id: `local-${i+1}` }));
     }
 }
@@ -87,6 +95,7 @@ export async function getApplications(): Promise<Application[]> {
         return appsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as unknown as Application));
     } catch (error) {
         console.error("Error fetching applications from Firestore:", error);
+        console.warn("FALLBACK: Could not fetch applications. Returning empty list.");
         return [];
     }
 }
