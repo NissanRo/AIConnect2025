@@ -75,18 +75,30 @@ export function MultiSelectDropdown({
               {options.map((option) => (
                 <CommandItem
                   key={option.value}
-                  onSelect={() => handleSelect(option.value)}
+                  onSelect={(currentValue) => {
+                    // This is to prevent the default `cmdk` behavior of closing the popover on select.
+                    // The actual selection logic is handled by the onClick on the inner div.
+                  }}
                   className="cursor-pointer"
                 >
-                  <Check
-                    className={cn(
-                      'mr-2 h-4 w-4',
-                      selected.includes(option.value)
-                        ? 'opacity-100'
-                        : 'opacity-0'
-                    )}
-                  />
-                  {option.label}
+                  <div
+                    className="flex items-center w-full"
+                    onClick={(e) => {
+                       e.preventDefault();
+                       e.stopPropagation();
+                       handleSelect(option.value);
+                    }}
+                  >
+                    <Check
+                      className={cn(
+                        'mr-2 h-4 w-4',
+                        selected.includes(option.value)
+                          ? 'opacity-100'
+                          : 'opacity-0'
+                      )}
+                    />
+                    <span>{option.label}</span>
+                  </div>
                 </CommandItem>
               ))}
             </CommandGroup>
