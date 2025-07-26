@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useTransition } from 'react';
+import { useState, useEffect } from 'react';
 import type { FC } from 'react';
 import { useToast } from "@/hooks/use-toast"
 import type { Project, Application } from '@/lib/types';
@@ -13,7 +13,6 @@ import Footer from '@/components/footer';
 import { AdminLoginModal } from '@/components/modals/admin-login-modal';
 import { SubmissionConfirmModal } from '@/components/modals/submission-confirm-modal';
 import { AiSuggestionModal } from '@/components/modals/ai-suggestion-modal';
-import { addApplication } from '@/app/actions';
 import { Skeleton } from '@/components/ui/skeleton';
 
 interface AIConnectClientPageProps {
@@ -25,14 +24,11 @@ const AIConnectClientPage: FC<AIConnectClientPageProps> = ({ initialProjects, in
   const [isAdmin, setIsAdmin] = useState(false);
   const [projects, setProjects] = useState<Project[]>(initialProjects);
   const [applications, setApplications] = useState<Application[]>(initialApplications);
-  const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
-  const [isPending, startTransition] = useTransition();
 
   // State for modals
   const [isLoginModalOpen, setLoginModalOpen] = useState(false);
-  const [isSubmissionModalOpen, setSubmissionModalOpen] = useState(false);
   const [isAiSuggestModalOpen, setAiSuggestModalOpen] = useState(false);
 
   // State for data passing to modals
@@ -66,20 +62,6 @@ const AIConnectClientPage: FC<AIConnectClientPageProps> = ({ initialProjects, in
     return false;
   };
   
-  // Application handler
-  const handleAddApplication = async (application: Omit<Application, 'id'>) => {
-    setIsLoading(true);
-    try {
-        const newApplication = await addApplication(application);
-        setApplications([...applications, newApplication]);
-        setSubmissionModalOpen(true);
-    } catch (error) {
-        toast({ title: "Error", description: "Failed to submit your interest. Please try again.", variant: "destructive" });
-    } finally {
-        setIsLoading(false);
-    }
-  };
-
   // AI Suggestion handler
   const handleGetAISuggestions = (specialization: string, skills: string) => {
     setAiSuggestionProfile({ specialization, skills });
@@ -122,19 +104,13 @@ const AIConnectClientPage: FC<AIConnectClientPageProps> = ({ initialProjects, in
             ))}
         </div>
 
-        <InterestForm 
-          projects={projects}
-          onSubmit={handleAddApplication}
-          onGetAISuggestions={handleGetAISuggestions}
-          isSubmitting={isLoading}
-        />
+        <InterestForm />
 
         <Footer />
       </div>
 
       {/* Modals */}
       <AdminLoginModal isOpen={isLoginModalOpen} onOpenChange={setLoginModalOpen} onLogin={handleLogin} />
-      <SubmissionConfirmModal isOpen={isSubmissionModalOpen} onOpenChange={setSubmissionModalOpen} />
       <AiSuggestionModal isOpen={isAiSuggestModalOpen} onOpenChange={setAiSuggestModalOpen} {...aiSuggestionProfile} />
     </>
   );
