@@ -33,9 +33,10 @@ interface InterestFormProps {
   projects: Project[];
   onSubmit: (application: Omit<Application, 'id'>) => void;
   onGetAISuggestions: (specialization: string, skills: string) => void;
+  isSubmitting: boolean;
 }
 
-const InterestForm: FC<InterestFormProps> = ({ projects, onSubmit, onGetAISuggestions }) => {
+const InterestForm: FC<InterestFormProps> = ({ projects, onSubmit, onGetAISuggestions, isSubmitting }) => {
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -136,8 +137,8 @@ const InterestForm: FC<InterestFormProps> = ({ projects, onSubmit, onGetAISugges
                 </div>
               </div>
               <div className="text-center mt-6">
-                <Button type="submit" size="lg" className="bg-accent text-accent-foreground hover:bg-accent/90">
-                  Submit Interest <Send className="ml-2 h-4 w-4"/>
+                <Button type="submit" size="lg" className="bg-accent text-accent-foreground hover:bg-accent/90" disabled={isSubmitting}>
+                  {isSubmitting ? 'Submitting...' : 'Submit Interest'} <Send className="ml-2 h-4 w-4"/>
                 </Button>
               </div>
             </form>

@@ -23,13 +23,14 @@ import { Skeleton } from '@/components/ui/skeleton';
 
 interface AIConnectClientPageProps {
   initialProjects: Project[];
+  initialApplications: Application[];
 }
 
-const AIConnectClientPage: FC<AIConnectClientPageProps> = ({ initialProjects }) => {
+const AIConnectClientPage: FC<AIConnectClientPageProps> = ({ initialProjects, initialApplications }) => {
   const [isAdmin, setIsAdmin] = useState(false);
   const [projects, setProjects] = useState<Project[]>(initialProjects);
-  const [applications, setApplications] = useState<Application[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [applications, setApplications] = useState<Application[]>(initialApplications);
+  const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
   const [isReordering, setIsReordering] = useState(false);
@@ -46,25 +47,6 @@ const AIConnectClientPage: FC<AIConnectClientPageProps> = ({ initialProjects }) 
   const [projectToEdit, setProjectToEdit] = useState<Project | null>(null);
   const [projectToDelete, setProjectToDelete] = useState<Project | null>(null);
   const [aiSuggestionProfile, setAiSuggestionProfile] = useState<{ specialization: string, skills: string }>({ specialization: '', skills: '' });
-
-  useEffect(() => {
-    // Projects are now passed in as initialProjects, so we only need to fetch applications on the client.
-    const fetchPageData = async () => {
-      setIsLoading(true);
-      try {
-        const applicationsData = await getApplications();
-        setApplications(applicationsData);
-      } catch (error) {
-        console.error("Failed to fetch page data", error);
-        toast({ title: "Error", description: "Failed to load page data. Please try again later.", variant: "destructive" });
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchPageData();
-  }, [toast]);
-
 
   // Admin login logic
   const [logoClickCount, setLogoClickCount] = useState(0);
@@ -198,12 +180,15 @@ const AIConnectClientPage: FC<AIConnectClientPageProps> = ({ initialProjects }) 
   
   // Application handler
   const handleAddApplication = async (application: Omit<Application, 'id'>) => {
+    setIsLoading(true);
     try {
         const newApplication = await addApplication(application);
         setApplications([...applications, newApplication]);
         setSubmissionModalOpen(true);
     } catch (error) {
         toast({ title: "Error", description: "Failed to submit your interest. Please try again.", variant: "destructive" });
+    } finally {
+        setIsLoading(false);
     }
   };
 
@@ -255,7 +240,7 @@ const AIConnectClientPage: FC<AIConnectClientPageProps> = ({ initialProjects }) 
         {isAdmin && <ApplicationsTable applications={applications} />}
 
         <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8 my-12">
-            {isLoading && projects.length === 0 ? renderProjectSkeletons() : projects.map((project, index) => (
+            {projects.length === 0 ? renderProjectSkeletons() : projects.map((project, index) => (
                 <ProjectCard
                     key={project.id}
                     project={project}
@@ -275,6 +260,7 @@ const AIConnectClientPage: FC<AIConnectClientPageProps> = ({ initialProjects }) 
           projects={projects}
           onSubmit={handleAddApplication}
           onGetAISuggestions={handleGetAISuggestions}
+          isSubmitting={isLoading}
         />
 
         <Footer />
