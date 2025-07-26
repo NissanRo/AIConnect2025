@@ -1,12 +1,13 @@
 'use server'
 
 import { suggestProjects, type ApplicantProfile, type ProjectSuggestionOutput } from '@/ai/flows/project-suggestion'
-import { getProjects as getProjectsFromDb, addProject as addProjectToDb, updateProject as updateProjectInDb, deleteProject as deleteProjectFromDb, addApplication as addApplicationToDb, getApplications as getApplicationsFromDb, updateProjectsOrder as updateProjectsOrderInDb } from '@/services/firestore';
+import { getApplications as getApplicationsFromDb, addApplication as addApplicationToDb } from '@/services/firestore';
 import type { Project, Application } from '@/lib/types';
+import { initialProjects } from '@/data/initial-projects';
 
 export async function getProjectSuggestions(data: ApplicantProfile): Promise<ProjectSuggestionOutput | { error: string }> {
   try {
-    const projects = await getProjectsFromDb();
+    const projects: Project[] = initialProjects.map((p, i) => ({ ...p, id: `proj-${i}`}));
     const result = await suggestProjects({ ...data, projects });
     if (!result?.suggestedProjects) {
       return { error: 'AI could not generate suggestions. Please try again.' };
@@ -19,29 +20,8 @@ export async function getProjectSuggestions(data: ApplicantProfile): Promise<Pro
 }
 
 export async function getProjects(): Promise<Project[]> {
-    return await getProjectsFromDb();
-}
-
-export async function addProject(project: Omit<Project, 'id'| 'code' | 'order'>): Promise<Project> {
-    const id = await addProjectToDb(project);
-    const projects = await getProjectsFromDb();
-    const newProject = projects.find(p => p.id === id);
-    if (!newProject) {
-        throw new Error('Could not find newly created project');
-    }
-    return newProject
-}
-
-export async function updateProject(id: string, project: Partial<Omit<Project, 'id' | 'code' | 'order'>>) {
-    await updateProjectInDb(id, project);
-}
-
-export async function updateProjectsOrder(projects: Pick<Project, 'id' | 'order'>[]) {
-    await updateProjectsOrderInDb(projects);
-}
-
-export async function deleteProject(id: string) {
-    await deleteProjectFromDb(id);
+    // Return static projects and add a temporary id
+    return initialProjects.map((p, i) => ({ ...p, id: `proj-${i}` }));
 }
 
 export async function getApplications(): Promise<Application[]> {
