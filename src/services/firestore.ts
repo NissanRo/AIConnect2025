@@ -2,7 +2,7 @@
 'use server';
 
 import { db } from '@/lib/firebase';
-import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, query, orderBy, runTransaction, writeBatch, getDoc } from 'firebase/firestore';
+import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, query, orderBy, runTransaction, writeBatch } from 'firebase/firestore';
 import type { Project, Application } from '@/lib/types';
 import { initialProjects } from '@/data/initial-projects';
 
@@ -16,14 +16,14 @@ export async function seedInitialProjects() {
         if (projectsSnapshot.empty) {
             console.log('No projects found, seeding initial projects...');
             const batch = writeBatch(db);
-            initialProjects.forEach((project, index) => {
+            initialProjects.forEach((project) => {
                 const docRef = doc(collection(db, PROJECTS_COLLECTION));
-                batch.set(docRef, { ...project, order: index + 1 });
+                batch.set(docRef, project);
             });
             await batch.commit();
             console.log('Initial projects seeded.');
         } else {
-            // One-time migration for existing projects that don't have an order
+             // One-time migration for existing projects that don't have an order
             const batch = writeBatch(db);
             let order = 1;
             const projectsToMigrate = projectsSnapshot.docs.filter(doc => doc.data().order === undefined);
@@ -40,7 +40,6 @@ export async function seedInitialProjects() {
         }
     } catch (error) {
         console.error("Error during project seeding or migration:", error);
-        // If seeding fails, we might still be able to read existing data.
     }
 }
 
@@ -63,10 +62,11 @@ export async function addProject(project: Omit<Project, 'id' | 'code' | 'order'>
   const projectsRef = collection(db, PROJECTS_COLLECTION);
   
   return runTransaction(db, async (transaction) => {
-    const projectsQuery = query(projectsRef, orderBy('code', 'desc'));
+    // We need to query for the project with the highest code and highest order to determine the next values
+    const codeQuery = query(projectsRef, orderBy('code', 'desc'));
     const orderQuery = query(projectsRef, orderBy('order', 'desc'));
     
-    const codeSnapshot = await getDocs(projectsQuery);
+    const codeSnapshot = await getDocs(codeQuery);
     const orderSnapshot = await getDocs(orderQuery);
     
     let newCode = 'PROJ-001';

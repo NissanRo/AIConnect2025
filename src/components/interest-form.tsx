@@ -8,11 +8,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Send, Sparkles } from 'lucide-react';
 import type { Project, Application } from '@/lib/types';
+import { Checkbox } from '@/components/ui/checkbox';
 
 const formSchema = z.object({
   name: z.string().min(2, { message: "Name must be at least 2 characters." }),
@@ -24,7 +24,9 @@ const formSchema = z.object({
   contact: z.string().min(10, { message: "Please enter a valid contact number." }),
   email: z.string().email({ message: "Please enter a valid email address." }),
   workType: z.enum(["Team", "Individual"], { required_error: "Please select your work preference." }),
-  projectId: z.string({ required_error: "Please select a project." }),
+  projectIds: z.array(z.string()).refine(value => value.some(item => item), {
+    message: "You have to select at least one project.",
+  }),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -49,7 +51,7 @@ const InterestForm: FC<InterestFormProps> = ({ projects, onSubmit, onGetAISugges
       contact: '',
       email: '',
       workType: 'Individual',
-      projectId: '',
+      projectIds: [],
     },
   });
   
@@ -58,13 +60,21 @@ const InterestForm: FC<InterestFormProps> = ({ projects, onSubmit, onGetAISugges
   const skills = watch('skills');
 
   function handleFormSubmit(values: FormValues) {
-    const selectedProject = projects.find(p => p.id === values.projectId);
-    if (!selectedProject) return;
+    const selectedProjects = projects.filter(p => values.projectIds.includes(p.id));
+    if (selectedProjects.length === 0) return;
 
     const application: Omit<Application, 'id'> = {
-      ...values,
+      name: values.name,
+      location: values.location,
+      specialization: values.specialization,
+      skills: values.skills,
       gradYear: values.gradYear.toString(),
-      projectInterest: `${selectedProject.code}: ${selectedProject.title}`,
+      college: values.college,
+      contact: values.contact,
+      email: values.email,
+      workType: values.workType,
+      projectIds: values.projectIds,
+      projectInterests: selectedProjects.map(p => `${p.code}: ${p.title}`),
     };
     onSubmit(application);
     form.reset();
@@ -123,28 +133,52 @@ const InterestForm: FC<InterestFormProps> = ({ projects, onSubmit, onGetAISugges
                 <div className="md:col-span-2">
                   <FormField
                     control={form.control}
-                    name="projectId"
-                    render={({ field }) => (
+                    name="projectIds"
+                    render={() => (
                       <FormItem>
-                        <FormLabel>Project of Interest</FormLabel>
-                        <div className="flex gap-2 items-start">
-                          <Select onValueChange={field.onChange} defaultValue={field.value}>
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select a Project" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              {projects.map(project => (
-                                <SelectItem key={project.id} value={project.id}>
-                                  {project.code}: {project.title}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          <Button type="button" variant="outline" onClick={handleAISuggestClick} aria-label="Get AI Suggestions">
-                            <Sparkles className="h-4 w-4" />
-                          </Button>
+                        <div className="mb-4">
+                            <FormLabel className="text-base">Projects of Interest</FormLabel>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <p className="text-sm text-muted-foreground">Select one or more projects.</p>
+                             <Button type="button" variant="outline" size="sm" onClick={handleAISuggestClick} aria-label="Get AI Suggestions">
+                                <Sparkles className="mr-2 h-4 w-4" /> Get AI Suggestions
+                            </Button>
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+                        {projects.map((project) => (
+                          <FormField
+                            key={project.id}
+                            control={form.control}
+                            name="projectIds"
+                            render={({ field }) => {
+                              return (
+                                <FormItem
+                                  key={project.id}
+                                  className="flex flex-row items-start space-x-3 space-y-0"
+                                >
+                                  <FormControl>
+                                    <Checkbox
+                                      checked={field.value?.includes(project.id)}
+                                      onCheckedChange={(checked) => {
+                                        return checked
+                                          ? field.onChange([...(field.value || []), project.id])
+                                          : field.onChange(
+                                              field.value?.filter(
+                                                (value) => value !== project.id
+                                              )
+                                            )
+                                      }}
+                                    />
+                                  </FormControl>
+                                  <FormLabel className="font-normal">
+                                    {project.code}: {project.title}
+                                  </FormLabel>
+                                </FormItem>
+                              )
+                            }}
+                          />
+                        ))}
                         </div>
                         <FormMessage />
                       </FormItem>

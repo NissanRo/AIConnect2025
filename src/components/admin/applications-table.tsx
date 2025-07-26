@@ -4,6 +4,7 @@ import type { FC } from 'react';
 import type { Application } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
 
 interface ApplicationsTableProps {
   applications: Application[];
@@ -25,7 +26,7 @@ const ApplicationsTable: FC<ApplicationsTableProps> = ({ applications }) => {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Name</TableHead>
-                    <TableHead>Project Interest</TableHead>
+                    <TableHead>Project Interests</TableHead>
                     <TableHead>Contact</TableHead>
                     <TableHead>College</TableHead>
                     <TableHead>Grad Year</TableHead>
@@ -36,7 +37,11 @@ const ApplicationsTable: FC<ApplicationsTableProps> = ({ applications }) => {
                   {applications.map((app, index) => (
                     <TableRow key={index}>
                       <TableCell className="font-medium">{app.name}</TableCell>
-                      <TableCell>{app.projectInterest}</TableCell>
+                      <TableCell>
+                        <div className="flex flex-wrap gap-2">
+                           {app.projectInterests.map(interest => <Badge key={interest} variant="secondary">{interest}</Badge>)}
+                        </div>
+                      </TableCell>
                       <TableCell>{app.email}<br />{app.contact}</TableCell>
                       <TableCell>{app.college}</TableCell>
                       <TableCell>{app.gradYear}</TableCell>
