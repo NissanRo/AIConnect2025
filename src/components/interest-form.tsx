@@ -2,7 +2,7 @@
 
 import React from 'react';
 import type { FC } from 'react';
-import { useForm, Controller } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Button } from '@/components/ui/button';
@@ -14,6 +14,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Send } from 'lucide-react';
 import type { Project, Application } from '@/lib/types';
+import { MultiSelectDropdown } from '@/components/multi-select-dropdown';
 
 
 const applicationSchema = z.object({
@@ -60,6 +61,8 @@ const InterestForm: FC<InterestFormProps> = ({ projects, onFormSubmit }) => {
     onFormSubmit({ ...values, projectInterests });
     reset();
   };
+  
+  const projectOptions = projects.map(p => ({ value: p.id, label: `${p.code}: ${p.title}`}));
 
   return (
     <section id="interestFormSection" className="max-w-4xl mx-auto my-16">
@@ -96,43 +99,15 @@ const InterestForm: FC<InterestFormProps> = ({ projects, onFormSubmit }) => {
                 <FormField
                   control={control}
                   name="projectIds"
-                  render={() => (
+                  render={({ field }) => (
                     <FormItem>
-                      <div className="mb-4">
-                        <FormLabel className="text-base">Projects of Interest</FormLabel>
-                      </div>
-                      <div className="space-y-2">
-                        {projects.map((item) => (
-                          <FormField
-                            key={item.id}
-                            control={control}
-                            name="projectIds"
-                            render={({ field }) => {
-                              return (
-                                <FormItem key={item.id} className="flex flex-row items-start space-x-3 space-y-0">
-                                  <FormControl>
-                                    <Checkbox
-                                      checked={field.value?.includes(item.id)}
-                                      onCheckedChange={(checked) => {
-                                        return checked
-                                          ? field.onChange([...(field.value || []), item.id])
-                                          : field.onChange(
-                                              field.value?.filter(
-                                                (value) => value !== item.id
-                                              )
-                                            )
-                                      }}
-                                    />
-                                  </FormControl>
-                                  <FormLabel className="font-normal">
-                                    {item.code}: {item.title}
-                                  </FormLabel>
-                                </FormItem>
-                              )
-                            }}
-                          />
-                        ))}
-                      </div>
+                      <FormLabel>Projects of Interest</FormLabel>
+                      <MultiSelectDropdown
+                        options={projectOptions}
+                        selected={field.value}
+                        onChange={field.onChange}
+                        placeholder="Select one or more projects..."
+                      />
                       <FormMessage />
                     </FormItem>
                   )}
